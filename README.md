@@ -7,6 +7,8 @@ requirements.
 - Benchmark Date: **30 Jan 2025**
 - Benchmark Version: **Version 3 Release 3 (V3R3)**
 
+> [!NOTE]
+> A security assessment of the Juniper SRX firewall consist of a security review of both the RE and the PFE services functions. The minimum required documents are the Juniper SRX NDM and the Juniper SRX ALG (this profile) STIGs.
 
 This profile was developed to reduce the time it takes to perform a security checks based upon the
 STIG Guidance from the Defense Information Systems Agency (DISA) in partnership between the DISA Services Directorate (SD) and the DISA Risk Management Executive (RME) office.
@@ -21,16 +23,28 @@ and Continuous Authority to Operate (cATO) processes.
 
 Table of Contents
 =================
-* [STIG Benchmark  Information](#benchmark-information)
-* [Getting Started](#getting-started)
-    * [Intended Usage](#intended-usage)
-    * [Tailoring to Your Environment](#tailoring-to-your-environment)
-    * [Testing the Profile Controls](#testing-the-profile-controls)
-* [Running the Profile](#running-the-profile)
-    * [Directly from Github](#directly-from-github) 
-    * [Using a local Archive copy](#using-a-local-archive-copy)
-    * [Different Run Options](#different-run-options)
-* [Using Heimdall for Viewing Test Results](#using-heimdall-for-viewing-test-results)
+- [Juniper SRX Services Gateway ALG Security Technical Implementation Guide](#juniper-srx-services-gateway-alg-security-technical-implementation-guide)
+- [Table of Contents](#table-of-contents)
+  - [Benchmark Information](#benchmark-information)
+  - [Getting Started](#getting-started)
+    - [InSpec (CINC-auditor) setup](#inspec-cinc-auditor-setup)
+    - [Intended Usage](#intended-usage)
+    - [Tailoring to Your Environment](#tailoring-to-your-environment)
+      - [Example of tailoring Inputs *While Still Complying* with the security guidance document for the profile:](#example-of-tailoring-inputs-while-still-complying-with-the-security-guidance-document-for-the-profile)
+      - [Using Customized Inputs](#using-customized-inputs)
+    - [Testing the Profile Controls](#testing-the-profile-controls)
+      - [Requirements](#requirements)
+      - [Testing Commands](#testing-commands)
+  - [Running the Profile](#running-the-profile)
+    - [Directly from Github](#directly-from-github)
+    - [Using a local Archive copy](#using-a-local-archive-copy)
+  - [Different Run Options](#different-run-options)
+  - [Using Heimdall for Viewing Test Results](#using-heimdall-for-viewing-test-results)
+  - [Authors](#authors)
+  - [NOTICE](#notice)
+  - [NOTICE](#notice-1)
+  - [NOTICE](#notice-2)
+  - [NOTICE](#notice-3)
 
 ## Benchmark Information
 The DISA RME and DISA SD Office, along with their vendor partners, create and maintain a set of Security Technical Implementation Guides for applications, computer systems and networks
