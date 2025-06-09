@@ -57,4 +57,43 @@ set security policies from-zone trust to-zone untrust policy user-role-fw1 then 
   tag legacy: ['V-66003', 'SV-80493']
   tag cci: ['CCI-000213', 'CCI-004891']
   tag nist: ['AC-3', 'SC-7 (29)']
+
+   # First, check for user-based firewall configuration
+  userfw_config = command('show configuration | display set | match "user"')
+  describe userfw_config do
+    its('exit_status') { should eq 0 }
+  end
+
+  userfw_keywords = %w[
+    security userfirewall
+    access profile
+    source-identity
+    destination-identity
+  ]
+
+  userfw_used = userfw_keywords.any? { |kw| userfw_config.stdout.include?(kw) }
+
+  if userfw_used
+    describe 'User-based firewall features' do
+      it 'are in use, skipping security policy source-identity check' do
+        expect(userfw_used).to eq true
+      end
+    end
+  else
+    # If user-based firewall not used, check that source-identity is explicitly defined in security policies
+    from_zone = input('from_zone')
+    to_zone = input('to_zone')
+
+    policy_cmd = command("show configuration security policies from-zone #{from_zone} to-zone #{to_zone}")
+    describe policy_cmd do
+      its('exit_status') { should eq 0 }
+    end
+
+    describe "Security policies from #{from_zone} to #{to_zone}" do
+      it 'must include source-identity if user-based firewall is not used' do
+        output = policy_cmd.stdout
+        expect(output).to match(/source-identity/), "Expected 'source-identity' in policy, but none was found:\n#{output}"
+      end
+    end
+  end
 end

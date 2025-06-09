@@ -43,4 +43,28 @@ set security policies from-zone untrust to-zone trust policy default-deny then l
   tag legacy: ['SV-80793', 'V-66303']
   tag cci: ['CCI-000172']
   tag nist: ['AU-12 c']
+
+  describe command('show firewall log') do
+    its('exit_status') { should eq 0 }
+    its('stdout') { should match(/Filter Action/) }
+
+    it 'should have matching actions in the log entries' do
+      log_output = subject.stdout
+
+      # Extract log lines containing 'Filter Action'
+      log_lines = log_output.lines.select { |line| line.include?('Filter Action') }
+
+      expect(log_lines).not_to be_empty
+
+      log_lines.each do |line|
+        # Extract the configured action (e.g., 'A', 'D', 'R')
+        configured_action = line.match(/Filter Action\s+([ADR])/)[1]
+
+        # Extract the logged action from the line
+        logged_action = line.match(/Filter Action\s+([ADR])/)[1]
+
+        expect(logged_action).to eq(configured_action), "Logged action '#{logged_action}' does not match configured action '#{configured_action}'"
+      end
+    end
+  end
 end

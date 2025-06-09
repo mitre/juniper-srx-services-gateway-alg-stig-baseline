@@ -31,3 +31,18 @@ inspec_version: |
 ###
 
 inputs:
+  # SV-214518
+  - name: from_zone
+    description: 'The system group of the source zone'
+    type: string
+    value: 'trust'
+    required: true
+    sensitive: false
+
+  # SV-214518
+  - name: to_zone
+    description: 'The system group of the destination zone'
+    type: string
+    value: 'untrust'
+    required: true
+    sensitive: true
