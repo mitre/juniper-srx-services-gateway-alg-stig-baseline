@@ -8,7 +8,7 @@ requirements.
 - Benchmark Version: **Version 3 Release 3 (V3R3)**
 
 > [!NOTE]
-> A security assessment of the Juniper SRX firewall consist of a security review of both the Routing Engine (RE) and Packet Forwarding Engine (PFE) services functions. The minimum required documents are, the Juniper SRX Network Device Management (NDM), and the Juniper SRX Application Layer Gateway (ALG) (this profile) STIGs.
+> A security assessment of the Juniper SRX firewall consist of a security review of both the Routing Engine (RE) and Packet Forwarding Engine (PFE) services functions. The minimum required documents are, the [Juniper SRX Network Device Management (NDM)](https://github.com/mitre/juniper-srx-services-gateway-ndm-stig-baseline), and the Juniper SRX Application Layer Gateway (ALG) (this profile) STIGs.
 
 This profile was developed to reduce the time it takes to perform a security checks based upon the
 STIG Guidance from the Defense Information Systems Agency (DISA) in partnership between the DISA Services Directorate (SD) and the DISA Risk Management Executive (RME) office.
