@@ -32,4 +32,19 @@ set security policies from-zone untrust to-zone trust policy default-deny then l
   tag legacy: ['SV-80795', 'V-66305']
   tag cci: ['CCI-000172']
   tag nist: ['AU-12 c']
+
+  # Define the expected configuration or behavior
+  describe command('show configuration security log') do
+    its('stdout') { should match (/(deny)/) }            # Matches the word "deny"
+    its('stdout') { should match (/(event-rate)/) }      # Matches the word "event-rate"
+    its('stdout') { should match (/(match condition)/) } # Matches the phrase "match condition"
+  end
+
+  describe command('show log messages | match "denied"') do
+    its('stdout') { should_not be_empty }    # Ensures there are logs for denied attempts
+  end
+
+  describe command('show configuration security zones') do
+    its('stdout') { should match (/(log)/) } # Matches the word "log"
+  end
 end

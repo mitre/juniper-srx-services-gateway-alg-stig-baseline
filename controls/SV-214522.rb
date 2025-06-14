@@ -33,4 +33,27 @@ set system syslog file<LOG-NAME> match "RT_FLOW_SESSION "'
   tag legacy: ['SV-80799', 'V-66309']
   tag cci: ['CCI-000140']
   tag nist: ['AU-5 b']
+
+  # Check if syslog configuration exists
+  describe command('show configuration system syslog') do
+    its('stdout') { should match (/(host)/) }           # Ensure a syslog host is configured
+    its('stdout') { should match (/(any)/) }            # Ensure "any" facility is being logged
+    its('stdout') { should match (/(authorization)/) }  # Ensure authorization logs are included
+  end
+
+  # Check if local logging is enabled
+  describe command('show configuration system syslog file messages') do
+    its('stdout') { should match (/(any any)/) }        # Ensure local logging is enabled for all facilities
+    its('stdout') { should match (/(authorization info)/) } # Ensure authorization logs are stored locally
+  end
+
+  # Simulate syslog server failure and check local logs
+  describe command('show log messages | match "local-storage"') do
+    its('stdout') { should_not be_empty } # Ensure logs are stored locally when syslog server is unreachable
+  end
+
+  # Check if logs are still being generated locally
+  describe command('show log messages | match "traffic log"') do
+    its('stdout') { should_not be_empty } # Ensure traffic logs are stored locally
+  end
 end

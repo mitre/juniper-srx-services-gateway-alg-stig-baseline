@@ -39,4 +39,22 @@ set security policies from-zone trust to-zone untrust policy default-permit then
   tag legacy: ['SV-80797', 'V-66307']
   tag cci: ['CCI-001851']
   tag nist: ['AU-4 (1)']
+
+  # Check if syslog configuration exists
+  describe command('show configuration system syslog') do
+    its('stdout') { should match (/(host)/) }           # Ensure a syslog host is configured
+    its('stdout') { should match (/(log-prefix)/) }     # Ensure log-prefix is set for identification
+    its('stdout') { should match (/(any)/) }            # Ensure "any" facility is being logged
+    its('stdout') { should match (/(authorization)/) }  # Ensure authorization logs are included
+  end
+
+  # Check if the syslog server is reachable
+  describe command('ping <syslog-server-ip>') do
+    its('stdout') { should match (/bytes from/) }       # Ensure the syslog server is reachable
+  end
+
+  # Check if audit logs are being sent to the syslog server
+  describe command('show log messages | match "<syslog-server-ip>"') do
+    its('stdout') { should_not be_empty }              # Ensure logs are being sent to the syslog server
+  end
 end

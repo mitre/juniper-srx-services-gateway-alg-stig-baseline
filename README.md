@@ -1,4 +1,4 @@
-# Juniper SRX Services Gateway ALG Security Technical Implementation Guide
+# Juniper SRX Services Gateway Application Layer Gateway (ALG) Security Technical Implementation Guide
 This InSpec Profile was created to facilitate testing and auditing of `Juniper SRX Services Gateway ALG`
 infrastructure and applications when validating compliancy with [Department of Defense (DoD) STIG](https://public.cyber.mil/stigs/)
 requirements.
@@ -8,7 +8,7 @@ requirements.
 - Benchmark Version: **Version 3 Release 3 (V3R3)**
 
 > [!NOTE]
-> A security assessment of the Juniper SRX firewall consist of a security review of both the RE and the PFE services functions. The minimum required documents are the Juniper SRX NDM and the Juniper SRX ALG (this profile) STIGs.
+> A security assessment of the Juniper SRX firewall consist of a security review of both the Routing Engine (RE) and Packet Forwarding Engine (PFE) services functions. The minimum required documents are, the Juniper SRX Network Device Management (NDM), and the Juniper SRX Application Layer Gateway (ALG) (this profile) STIGs.
 
 This profile was developed to reduce the time it takes to perform a security checks based upon the
 STIG Guidance from the Defense Information Systems Agency (DISA) in partnership between the DISA Services Directorate (SD) and the DISA Risk Management Executive (RME) office.
@@ -23,7 +23,7 @@ and Continuous Authority to Operate (cATO) processes.
 
 Table of Contents
 =================
-- [Juniper SRX Services Gateway ALG Security Technical Implementation Guide](#juniper-srx-services-gateway-alg-security-technical-implementation-guide)
+- [Juniper SRX Services Gateway Application Layer Gateway (ALG) Security Technical Implementation Guide](#juniper-srx-services-gateway-application-layer-gateway-alg-security-technical-implementation-guide)
 - [Table of Contents](#table-of-contents)
   - [Benchmark Information](#benchmark-information)
   - [Getting Started](#getting-started)
