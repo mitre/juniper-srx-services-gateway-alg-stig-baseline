@@ -52,4 +52,13 @@ Note: When pre-defined applications are used in firewall policies, the timeout v
   tag legacy: ['V-66321', 'SV-80811']
   tag cci: ['CCI-001133']
   tag nist: ['SC-10']
+
+  # Check if the session inactivity timeout is set to 900 seconds or less for TCP, UDP, and ICMP sessions.
+  # The command 'show configuration security flow' is used to verify the timeout settings.
+  # The expected timeout values are 900 seconds (15 minutes) for TCP, UDP, and ICMP sessions.
+  describe command('show configuration security flow') do
+    its('stdout') { should match(/tcp-session-timeout\s+900/) } # 900 seconds = 15 minutes
+    its('stdout') { should match(/udp-session-timeout\s+900/) } # 900 seconds = 15 minutes
+    its('stdout') { should match(/icmp-session-timeout\s+900/) } # 900 seconds = 15 minutes
+  end
 end

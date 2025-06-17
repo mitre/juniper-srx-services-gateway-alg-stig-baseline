@@ -30,4 +30,8 @@ set security zones security-zone <zone-name> interfaces <interface-name> host-in
   tag legacy: ['V-66315', 'SV-80805']
   tag cci: ['CCI-000381']
   tag nist: ['CM-7 a']
+
+  describe 'Check the Juniper SRX Services Gateway Firewall if its configured as a DNS proxy. Providing this network service is unrelated to the role as a Firewall.' do
+    skip 'If a stanza exists for DNS (e.g., forwarders option), this is a finding.'
+  end
 end

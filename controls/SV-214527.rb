@@ -31,4 +31,8 @@ Consult the Juniper knowledge base and configuration guides to determine the com
   tag legacy: ['SV-80809', 'V-66319']
   tag cci: ['CCI-000382']
   tag nist: ['CM-7 b']
+
+  describe 'Check the Juniper SRX Services Gateway Firewall if its configured to prohibit or restrict the use of unauthorized functions, ports, protocols, and/or services, as defined in the Ports, Protocols, and Services Management Category Assurance List (PPSM CAL), vulnerability assessments.' do
+    skip 'If functions, ports, protocols, and services identified on the PPSM CAL are not disabled, this is a finding.'
+  end
 end

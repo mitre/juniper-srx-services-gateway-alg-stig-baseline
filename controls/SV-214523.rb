@@ -29,4 +29,8 @@ Note: Only remove unauthorized services. This control is not intended to restric
   tag legacy: ['SV-80801', 'V-66311']
   tag cci: ['CCI-000381']
   tag nist: ['CM-7 a']
+
+  describe 'Check the Juniper SRX Services Gateway Firewall for unnecessary network services and functions installed/running that are not used in the architecture.' do
+    skip 'If unneeded services and functions are installed on the device, but are not part of the documented role of the device, this is a finding.'
+  end
 end

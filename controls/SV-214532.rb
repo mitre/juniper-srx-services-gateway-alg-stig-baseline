@@ -31,4 +31,14 @@ set security zones security-zone trust screen untrust-screen'
   tag legacy: ['V-66329', 'SV-80819']
   tag cci: ['CCI-001094', 'CCI-004866']
   tag nist: ['SC-5 (1)', 'SC-5 b']
+
+  # Check if outbound zones have DoS screens applied
+  describe command('show configuration security zones') do
+    its('stdout') { should match(/security-zone .* screen .*dos-screen/) }
+  end
+
+  # Check if interfaces are assigned to zones with DoS screens
+  describe command('show configuration security zones') do
+    its('stdout') { should match(/interface .* zone .*dos-screen/) }
+  end
 end

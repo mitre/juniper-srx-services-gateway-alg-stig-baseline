@@ -31,4 +31,47 @@ set security policies from-zone trust to-zone untrust policy default-deny then d
   tag legacy: ['SV-80821', 'V-66331']
   tag cci: ['CCI-002403', 'CCI-004891']
   tag nist: ['SC-7 (11)', 'SC-7 (29)']
+
+  # Check if the untrust zone has the correct interface assigned
+  describe command('show configuration security zones security-zone untrust') do
+    its('stdout') { should include('interfaces ge-0/0/1.0') }
+  end
+
+  # Check if the trust zone has the correct interface assigned
+  describe command('show configuration security zones security-zone trust') do
+    its('stdout') { should include('interfaces ge-0/0/2.0') }
+  end
+
+  # Check if the default-deny policy is configured from trust to untrust zone
+  describe command('show configuration security policies from-zone trust to-zone untrust policy default-deny') do
+    its('stdout') { should include('match destination-address any') }
+    its('stdout') { should include('then deny') }
+  end
+
+  #---------------------------------------------------------------------------------------------
+  # Using authorized servers and destinations
+  # Define inputs for authorized sources and destinations
+  
+  # authorized_sources = input('authorized_sources', value: [])
+  # authorized_destinations = input('authorized_destinations', value: [])
+
+  #  # Check if security policies are configured to allow only authorized sources to authorized destinations
+  # describe command('show configuration security policies') do
+  #   authorized_sources.each do |source|
+  #     its('stdout') { should include("source-address #{source}") }
+  #   end
+
+  #   authorized_destinations.each do |destination|
+  #     its('stdout') { should include("destination-address #{destination}") }
+  #   end
+
+  #   its('stdout') { should include('then permit') } # Ensure the policy explicitly permits traffic
+  # end
+
+  # # Ensure there is a default-deny policy for all other traffic
+  # describe command('show configuration security policies') do
+  #   its('stdout') { should include('policy default-deny') }
+  #   its('stdout') { should include('match destination-address any') }
+  #   its('stdout') { should include('then deny') }
+  # end
 end

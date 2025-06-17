@@ -44,4 +44,20 @@ Example: set security zones security-zone untrust screen untrust-screen'
   tag legacy: ['SV-80813', 'V-66323']
   tag cci: ['CCI-002385', 'CCI-004866']
   tag nist: ['SC-5 a', 'SC-5 b']
+
+  # Check for the specific IDS screen settings under security screen configuration
+  describe command('show configuration security screen ids-option untrust-screen') do
+    # Ensure each of the specific settings are present and correctly configured
+    its('stdout') { should match(/icmp ip-sweep threshold 1000/) }
+    its('stdout') { should match(/tcp port-scan threshold 1000/) }
+    its('stdout') { should match(/tcp syn-flood alarm-threshold 1000/) }
+    its('stdout') { should match(/tcp syn-flood attack-threshold 1100/) }
+    its('stdout') { should match(/tcp syn-flood source-threshold 100/) }
+    its('stdout') { should match(/tcp syn-flood destination-threshold 2048/) }
+    its('stdout') { should match(/tcp syn-flood timeout 20/) }
+    its('stdout') { should match(/udp flood threshold 5000/) }
+    its('stdout') { should match(/udp udp-sweep threshold 1000/) }
+    its('stderr') { should eq '' }
+    its('exit_status') { should eq 0 }
+  end  
 end

@@ -46,3 +46,19 @@ inputs:
     value: 'untrust'
     required: true
     sensitive: true
+
+  # SV-214533
+  - name: authorized_sources
+    description: 'The system group of the authorized source IP addresses (192.168.1.0/24, 10.0.0.0/16)'
+    type: array
+    value: []
+    required: false
+    sensitive: false
+
+    # SV-214533
+  - name: authorized_destinations
+    description: 'The system group of the authorized destination IP addresses (172.16.0.0/24, 192.168.2.0/24)'
+    type: array
+    value: []
+    required: false
+    sensitive: false

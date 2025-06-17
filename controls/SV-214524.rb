@@ -33,4 +33,8 @@ set security zones security-zone <zone-name> interfaces <interface-name> host-in
   tag legacy: ['SV-80803', 'V-66313']
   tag cci: ['CCI-000381']
   tag nist: ['CM-7 a']
+
+  describe 'Check the Juniper SRX Services Gateway Firewall if its configured as an NTP server. Providing this network service is unrelated to the role as a firewall.' do
+    skip 'If NTP is included in any of the zone or interface stanzas, this is a finding.'
+  end
 end

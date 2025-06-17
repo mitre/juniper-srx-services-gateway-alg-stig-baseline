@@ -30,4 +30,15 @@ set security zones security-zone <zone-name> interfaces <interface-name> host-in
   tag legacy: ['V-66317', 'SV-80807']
   tag cci: ['CCI-000381']
   tag nist: ['CM-7 a']
+
+  # Define the command that retrieves the DHCP server configuration on the Juniper SRX.
+  # The command `show configuration system services dhcp` shows DHCP server configurations.
+  describe command('show configuration system services dhcp') do
+    its('stdout') { should_not match(/enabled|dhcp/) }
+  end
+
+  # The command `show configuration system services` shows all configured services.
+  describe command('show configuration system services') do
+    its('stdout') { should_not include('dhcp') }
+  end
 end
