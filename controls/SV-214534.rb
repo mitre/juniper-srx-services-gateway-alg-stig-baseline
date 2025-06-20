@@ -21,4 +21,50 @@ If the site has not configured the SRX to fail closed, this is a finding.'
   tag legacy: ['V-66333', 'SV-80823']
   tag cci: ['CCI-001126']
   tag nist: ['SC-7 (18)']
+
+  #-----------------------------------------------------------------------
+  # Verify Default Deny-All Policy
+  describe command('show configuration security policies | display set | match default-policy') do
+    its('stdout') { should match(/set security policies default-policy deny-all/) }
+  end
+
+  #-----------------------------------------------------------------------
+  # Verify Fail Closed for Hardware/Software Failures
+  # Verify global failover on loss of keepalives
+  describe command('show configuration chassis cluster | display set') do
+    its('stdout') { should match(/set chassis cluster failover on-loss-of-keepalives/) }
+  end
+
+  #-----------------------------------------------------------------------
+  # Verify redundancy group failover on loss of keepalives
+  describe command('show configuration chassis cluster | display set') do
+    its('stdout') { should match(/set chassis cluster redundancy-group 0 failover on-loss-of-keepalives/) }
+  end
+
+  #-----------------------------------------------------------------------
+  # Verify Fail Closed for Routing Failures
+  describe command('show configuration routing-options forwarding-table export | display set') do
+    its('stdout') { should match(/set routing-options forwarding-table export fail-closed-policy/) }
+  end
+
+  #-----------------------------------------------------------------------
+  # Verify Fail Closed Policy Statement
+  describe command('show configuration policy-options policy-statement fail-closed-policy | display set') do
+    its('stdout') { should match(/set policy-options policy-statement fail-closed-policy term 2 then reject/) }
+  end
+
+  
+  #-----------------------------------------------------------------------
+  # Verify Security Zones Default Deny
+  describe command('show configuration security zones | display set') do
+    its('stdout') { should match(/set security zones security-zone trust host-inbound-traffic system-services none/) }
+    its('stdout') { should match(/set security zones security-zone trust host-inbound-traffic protocols none/) }
+    its('stdout') { should match(/set security zones security-zone untrust host-inbound-traffic system-services none/) }
+    its('stdout') { should match(/set security zones security-zone untrust host-inbound-traffic protocols none/) }
+  end
+
+  # # Verify Explicitly Allowed Traffic (if applicable)
+  # describe command('show configuration security policies | display set | match allow-http') do
+  #   its('stdout') { should match(/set security policies from-zone trust to-zone untrust policy allow-http then permit/) }
+  # end
 end

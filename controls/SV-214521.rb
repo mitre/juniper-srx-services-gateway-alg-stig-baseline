@@ -48,13 +48,15 @@ set security policies from-zone trust to-zone untrust policy default-permit then
     its('stdout') { should match (/(authorization)/) }  # Ensure authorization logs are included
   end
 
+  syslog_server_ip = input('syslog_server_ip')
+
   # Check if the syslog server is reachable
-  describe command('ping <syslog-server-ip>') do
+  describe command("ping #{syslog_server_ip}") do
     its('stdout') { should match (/bytes from/) }       # Ensure the syslog server is reachable
   end
 
   # Check if audit logs are being sent to the syslog server
-  describe command('show log messages | match "<syslog-server-ip>"') do
+  describe command("show log messages | match #{syslog_server_ip}") do
     its('stdout') { should_not be_empty }              # Ensure logs are being sent to the syslog server
   end
 end

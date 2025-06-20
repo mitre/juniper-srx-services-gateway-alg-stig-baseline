@@ -44,4 +44,35 @@ set firewall family inet6 filter egress-v6 term permit-lr then accept'
   tag legacy: ['SV-80827', 'V-66337']
   tag cci: ['CCI-001312']
   tag nist: ['SI-11 a']
+
+  # Block or restrict ICMP from untrust to trust (no inbound pings from internet)
+  describe command('show configuration security policies | display set | match "application junos-ping"') do
+    its('stdout') { should_not match(/from-zone untrust to-zone trust/) }
+  end
+
+  # Check that ICMP is not globally allowed in host-inbound system services
+  describe command('show configuration security zones | display set | match system-services') do
+    # Ensure ICMP is not allowed globally in host-inbound system services
+    # Works if: You’ve explicitly deleted or never configured this system service.
+    its('stdout') { should_not match(/set security zones security-zone untrust host-inbound-traffic system-services ping/) }
+    # To be more precise, we could tighten the match and use:
+    # its('stdout') { should_not match(/security-zone untrust .* ping/) }
+  end
+
+  # Optionally check rate-limiting (CoS or policer config — advanced)
+  describe command('show configuration firewall | display set | match icmp') do
+    #its('stdout') { should match(/term block-icmp/) }
+    its('stdout') { should match(/term .*icmp.*/) }
+  end
+
+  # (Optional) Ensure diagnostic ICMP is allowed internally
+  describe command('show configuration security policies | display set | match junos-ping') do
+    its('stdout') { should match(/from-zone trust to-zone trust/) }
+  end
+
+  # Ensure ICMP is blocked or denied in the security policies
+  describe command('show configuration security policies | display set') do
+    its('stdout') { should match(/policy block-icmp .* then deny/) }
+  end
+
 end

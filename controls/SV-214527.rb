@@ -32,7 +32,37 @@ Consult the Juniper knowledge base and configuration guides to determine the com
   tag cci: ['CCI-000382']
   tag nist: ['CM-7 b']
 
-  describe 'Check the Juniper SRX Services Gateway Firewall if its configured to prohibit or restrict the use of unauthorized functions, ports, protocols, and/or services, as defined in the Ports, Protocols, and Services Management Category Assurance List (PPSM CAL), vulnerability assessments.' do
-    skip 'If functions, ports, protocols, and services identified on the PPSM CAL are not disabled, this is a finding.'
+  describe command('show configuration security policies | display set') do
+    let(:stdout) { subject.stdout }
+
+    it 'should have default deny-all policy' do
+      expect(stdout).to match(/set security policies default-policy deny-all/)
+    end
+
+    it 'should not have any allow-all default policies' do
+      expect(stdout).not_to match(/set security policies default-policy allow-all/)
+    end
+
+    it 'should not use overly permissive policies (application any)' do
+      expect(stdout).not_to match(/set security policies .* match application any/)
+    end
+
+    it 'should not allow all traffic by omitting match blocks' do
+      expect(stdout).to match(/set security policies .* match application/)
+    end
+
+    AUTHORIZED_APPS = input('authorized_apps') || []
+    it 'should not allow unauthorized applications' do
+      unauthorized_apps = []
+
+      stdout.lines.each do |line|
+        if line =~ /set security policies .* match application (\S+)/
+          app = Regexp.last_match(1)
+          unauthorized_apps << app unless AUTHORIZED_APPS.include?(app)
+        end
+      end
+
+      expect(unauthorized_apps.uniq).to be_empty, "Found unauthorized applications: #{unauthorized_apps.uniq.join(', ')}"
+    end
   end
 end

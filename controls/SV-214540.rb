@@ -37,4 +37,30 @@ set security policies from-zone untrust to-zone trust policy default-deny then l
   tag legacy: ['V-66345', 'SV-80835']
   tag cci: ['CCI-002664']
   tag nist: ['SI-4 (5)']
+
+  # 1. Check if IDP or UTM (antivirus, web filtering) is enabled and applied
+  describe command('show configuration security idp | display set') do
+    its('stdout') { should match(/set security idp/) }
+  end
+
+  describe command('show configuration security utm | display set') do
+    its('stdout') { should match(/set security utm/) }
+  end
+
+  # 2. Confirm IDP policies are applied to zones (e.g., untrust)
+  describe command('show configuration security zones | display set') do
+    its('stdout') { should match(/set security zones security-zone untrust idp/).or match(/set security zones security-zone trust idp/) }
+  end
+
+  # 3. Confirm security logs stream is enabled for real-time alerting
+  describe command('show configuration security log | display set') do
+    its('stdout') { should match(/set security log mode stream/) }
+    its('stdout') { should match(/set security log stream [^\s]+ host \d+\.\d+\.\d+\.\d+/) }
+    its('stdout') { should match(/set security log stream [^\s]+ severity (info|notice|warning|error)/) }
+  end
+
+  # 4. Confirm logs include IDP or UTM events (this confirms detection occurred and alert was sent)
+  describe command('show log messages | match IDP') do
+    its('stdout') { should_not be_empty }
+  end
 end

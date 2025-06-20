@@ -35,4 +35,36 @@ set security policies from-zone untrust to-zone trust policy default-deny then l
   tag legacy: ['V-66343', 'SV-80833']
   tag cci: ['CCI-002664']
   tag nist: ['SI-4 (5)']
+
+  # 1. Check that logs are generated for permitted policies (inbound and outbound)
+  describe command('show configuration security policies | display set') do
+    let(:stdout) { subject.stdout }
+
+    it 'should log session starts for inbound and outbound allow policies' do
+      expect(stdout).to match(/set security policies from-zone trust to-zone untrust policy .* then permit log session-init/)
+      expect(stdout).to match(/set security policies from-zone untrust to-zone trust policy .* then permit log session-init/)
+    end
+  end
+
+  # 2. Ensure a security log stream is defined to forward alerts
+  describe command('show configuration security log | display set') do
+    let(:stdout) { subject.stdout }
+
+    it 'should have stream mode enabled for real-time alerting' do
+      expect(stdout).to match(/set security log mode stream/)
+    end
+
+    it 'should specify at least one log stream destination (e.g. SIEM monitored by ISSO/ISSM)' do
+      expect(stdout).to match(/set security log stream [^\s]+ host \d+\.\d+\.\d+\.\d+/)
+    end
+
+    it 'should use an appropriate severity level (info or higher)' do
+      expect(stdout).to match(/set security log stream [^\s]+ severity (info|notice|warning|error)/)
+    end
+  end
+
+  # 3. Optionally validate SNMP trap targets (if used as alerting mechanism)
+  describe command('show configuration security log | display set') do
+    its('stdout') { should match(/set snmp trap-group [^\s]+ targets \d+\.\d+\.\d+\.\d+/) }
+  end
 end

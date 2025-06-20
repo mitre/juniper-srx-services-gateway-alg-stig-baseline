@@ -10,8 +10,7 @@ description: null
 version: 3.3.0
 supports: []
 depends: []
-inspec_version: |
-  "~>6.0"
+inspec_version: "~>6.0"
 
 
 ### INPUTS ###
@@ -55,10 +54,51 @@ inputs:
     required: false
     sensitive: false
 
-    # SV-214533
+  # SV-214521
+  - name: syslog_server_ip
+    description: 'The system log server IP)'
+    type: string
+    value: ''
+    required: false
+    sensitive: false
+
+  # SV-214527
+  - name: authorized_apps
+    description: 'Define approved applications per PPSM CAL or internal policy'
+    type: array
+    value: [
+      'junos-https',
+      'junos-http',
+      'junos-ssh',
+      'junos-dns',
+      'junos-ping',
+      'junos-snmp',
+      'junos-telnet',
+      'junos-ntp'
+    ]
+    required: false
+    sensitive: false
+
+  # SV-214528
+  - name: max_timeout
+    description: 'Define the max idle-timeout for application sessions or any custom application'
+    type: numeric
+    value: 900
+    required: false
+    sensitive: false
+  
+  # SV-214533
   - name: authorized_destinations
     description: 'The system group of the authorized destination IP addresses (172.16.0.0/24, 192.168.2.0/24)'
     type: array
     value: []
+    required: false
+    sensitive: false
+
+  # SV-214539
+  - name: alert_server_ip
+    description: 'The external alerting or SIEM server (e.g., Splunk, QRadar, ArcSight, etc.) where the Juniper SRX device will send its security log events.'
+    type: string
+    value: ''
     required: false
     sensitive: false

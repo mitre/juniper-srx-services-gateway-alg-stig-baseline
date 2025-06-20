@@ -37,4 +37,28 @@ set security policies from-zone untrust to-zone trust policy default-deny then l
   tag legacy: ['SV-80837', 'V-66347']
   tag cci: ['CCI-002664']
   tag nist: ['SI-4 (5)']
+  
+  # 1. Check if security screens are configured (DoS protection)
+  describe command('show configuration security screen | display set') do
+    its('stdout') { should match(/set security screen ids-option [^\s]+/i) }
+    its('stdout') { should match(/(syn-flood|icmp-flood|port-scan|udp-flood)/i) }
+  end
+
+  # 2. Check if security screens are applied to zones (e.g., untrust or trust)
+  describe command('show configuration security zones | display set') do
+    its('stdout') { should match(/set security zones security-zone [^\s]+ screen [^\s]+/) }
+  end
+
+  # 3. Check if security logging is configured to stream alerts
+  describe command('show configuration security log | display set') do
+    its('stdout') { should match(/set security log mode stream/) }
+    its('stdout') { should match(/set security log stream [^\s]+ host \d+\.\d+\.\d+\.\d+/) }
+    its('stdout') { should match(/set security log stream [^\s]+ severity (info|notice|warning|error)/) }
+  end
+
+  # 4. Verify logs are being generated for SCREEN/DoS events
+  describe command('show log messages | match SCREEN') do
+    its('stdout') { should_not be_empty }
+  end
+
 end

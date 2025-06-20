@@ -35,4 +35,49 @@ set security policies from-zone untrust to-zone trust policy default-deny then d
   tag legacy: ['SV-80829', 'V-66339']
   tag cci: ['CCI-002661']
   tag nist: ['SI-4 (4) (b)']
+
+  # Check that flow trace options are enabled to monitor sessions
+  describe command('show configuration security flow') do
+    its('stdout') { should match(/traceoptions/) }
+  end
+
+  # Per-zone inbound checks
+  monitored_zones = input('monitored_zones', value: ['DMZ-zone']) # Set a default 'DMZ-zone'
+  monitored_zones.each do |zone|
+    # Check that there are policies monitoring inbound traffic from zone
+    describe "Inbound security policy from #{zone}" do
+      subject { command("show configuration security policies | display set | match 'from-zone #{zone}'") }
+
+      it "should have policies from #{zone} to any zone" do
+        expect(subject.stdout).to match(/from-zone #{zone}/)
+      end
+    end
+
+    # Check that logs are configured for sessions initiated on inbound policies
+    describe "Inbound session logging for #{zone}" do
+      subject { command("show configuration security policies | display set | match 'from-zone #{zone}' | match 'then log session-init'") }
+
+      it "should log session-init for #{zone} policies" do
+        expect(subject.stdout).to match(/then log session-init/)
+      end
+    end
+
+    # Confirm that host-inbound system services are restricted or monitored on zone
+    describe "Host-inbound traffic settings for #{zone}" do
+      subject { command("show configuration security zones | display set | match '#{zone}'") }
+
+      it "should not allow all system-services" do
+        expect(subject.stdout).not_to match(/system-services all/)
+      end
+
+      it "should restrict or monitor system-services" do
+        expect(subject.stdout).to match(/host-inbound-traffic system-services/)
+      end
+    end
+  end
+
+  # Optionally confirm IDP or threat detection is active (if licensed)
+  # describe command('show configuration security idp') do
+  #   its('stdout') { should match(/security idp/) }
+  # end
 end

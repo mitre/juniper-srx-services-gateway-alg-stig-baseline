@@ -31,4 +31,42 @@ set security policies from-zone trust to-zone untrust policy default-deny then d
   tag legacy: ['SV-80831', 'V-66341']
   tag cci: ['CCI-002662']
   tag nist: ['SI-4 (4) (b)']
+
+  # Check global session monitoring settings
+  describe command('show configuration security flow') do
+    its('stdout') { should match(/traceoptions/) }
+  end
+
+  # Per-zone outbound checks
+  monitored_zones = input('monitored_zones', value: ['DMZ-zone']) # Set a default 'DMZ-zone'
+  monitored_zones.each do |zone|
+    describe "Outbound security policy from #{zone}" do
+      subject { command("show configuration security policies | display set | match 'from-zone #{zone}'") }
+
+      it "should have policies from #{zone} to other zones (e.g., untrust)" do
+        expect(subject.stdout).to match(/from-zone #{zone} to-zone .+/)
+      end
+    end
+
+    describe "Outbound session logging for #{zone}" do
+      subject { command("show configuration security policies | display set | match 'from-zone #{zone}' | match 'then log session-init'") }
+
+      it "should log session-init for outbound policies" do
+        expect(subject.stdout).to match(/then log session-init/)
+      end
+    end
+
+    describe "Host-inbound traffic settings for #{zone} (optional outbound indicators)" do
+      subject { command("show configuration security zones | display set | match '#{zone}'") }
+
+      it "should have host-inbound settings, if relevant to outbound services" do
+        expect(subject.stdout).to match(/host-inbound-traffic/)
+      end
+    end
+  end
+
+  # Check IDP (optional)
+  # describe command('show configuration security idp') do
+  #   its('stdout') { should match(/security idp/) }
+  # end
 end

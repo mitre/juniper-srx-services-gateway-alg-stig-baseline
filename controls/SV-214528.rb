@@ -52,13 +52,49 @@ Note: When pre-defined applications are used in firewall policies, the timeout v
   tag legacy: ['V-66321', 'SV-80811']
   tag cci: ['CCI-001133']
   tag nist: ['SC-10']
+  
+  # 15 minutes = 900 seconds
+  MAX_TIMEOUT = input('max_timeout') || 900
 
   # Check if the session inactivity timeout is set to 900 seconds or less for TCP, UDP, and ICMP sessions.
   # The command 'show configuration security flow' is used to verify the timeout settings.
   # The expected timeout values are 900 seconds (15 minutes) for TCP, UDP, and ICMP sessions.
-  describe command('show configuration security flow') do
-    its('stdout') { should match(/tcp-session-timeout\s+900/) } # 900 seconds = 15 minutes
-    its('stdout') { should match(/udp-session-timeout\s+900/) } # 900 seconds = 15 minutes
-    its('stdout') { should match(/icmp-session-timeout\s+900/) } # 900 seconds = 15 minutes
+  describe command('show configuration security flow | display set') do
+    let(:output) { subject.stdout }
+
+    it "should set tcp-session timeout to #{MAX_TIMEOUT} seconds" do
+      expect(output).to match(/set security flow tcp-session timeout #{MAX_TIMEOUT}/)
+    end
+
+    it "should set udp-session timeout to #{MAX_TIMEOUT} seconds" do
+      expect(output).to match(/set security flow session-timeout udp #{MAX_TIMEOUT}/)
+    end
+
+    it "should set icmp-session timeout to #{MAX_TIMEOUT} seconds" do
+      expect(output).to match(/set security flow session-timeout icmp #{MAX_TIMEOUT}/)
+    end
+  end  
+
+  # Check if the idle-timeout is set for any custom applications, not exceeding 900 seconds.
+  # The command 'show configuration applications' is used to verify the idle-timeout settings.
+  # The expected idle-timeout values are 900 seconds (15 minutes) for custom applications.
+  describe command('show configuration applications | display set') do
+    let(:stdout) { subject.stdout }
+
+    it 'should define idle-timeout for any custom applications, not exceeding 900 seconds' do
+      timeouts = []
+
+      stdout.lines.each do |line|
+        if line =~ /set applications application (\S+) idle-timeout (\d+)/
+          app = Regexp.last_match(1)
+          timeout = Regexp.last_match(2).to_i
+          timeouts << { app: app, timeout: timeout }
+        end
+      end
+
+      failing = timeouts.select { |t| t[:timeout] > MAX_IDLE_TIMEOUT }
+
+      expect(failing).to be_empty, "The following applications exceed the 15-minute idle-timeout limit: #{failing.map { |f| "#{f[:app]}=#{f[:timeout]}s" }.join(', ')}"
+    end
   end
 end
