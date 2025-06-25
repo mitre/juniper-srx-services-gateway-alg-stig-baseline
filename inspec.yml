@@ -46,6 +46,19 @@ inputs:
     required: true
     sensitive: true
 
+  # SV-214527
+  - name: approved_services
+    description: 'Define approved protocols per PPSM CAL or organizational policy'
+    type: array
+    value: [
+      'set security services screen',
+      'set security services ipsec',
+      'set security services ssl',
+      'set security services unified-access-control'
+    ]
+    required: true
+    sensitive: false
+
   # SV-214533
   - name: authorized_sources
     description: 'The system group of the authorized source IP addresses (192.168.1.0/24, 10.0.0.0/16)'

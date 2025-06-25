@@ -32,37 +32,37 @@ Consult the Juniper knowledge base and configuration guides to determine the com
   tag cci: ['CCI-000382']
   tag nist: ['CM-7 b']
 
-  describe command('show configuration security policies | display set') do
-    let(:stdout) { subject.stdout }
+  # -----------------------------------------------
+  # Input: List of approved "set" command prefixes
+  # These represent allowed Junos service lines under 'security services'.
+  # This list should match the PPSM CAL (or organizational policy).
+  # -----------------------------------------------
+  approved_services = input('approved_services')
+  
+  # Get the configuration output from the device
+  # We use `match "security services"` to extract only the relevant config lines.
+  # The 'display set' format ensures each line starts with `set ...`
+  cmd = command('show configuration | display set | match "security services"')
+  output = cmd.stdout
 
-    it 'should have default deny-all policy' do
-      expect(stdout).to match(/set security policies default-policy deny-all/)
+  # Basic check: Ensure the command executed successfully
+  describe 'Security services configuration' do
+    it 'should retrieve the configuration successfully' do
+      expect(cmd.exit_status).to eq(0)
     end
+  end
 
-    it 'should not have any allow-all default policies' do
-      expect(stdout).not_to match(/set security policies default-policy allow-all/)
-    end
+  # Clean and extract all lines that begin with `set security services`
+  configured_services = output.lines.map(&:strip).select { |line| line.start_with?('set security services') }
 
-    it 'should not use overly permissive policies (application any)' do
-      expect(stdout).not_to match(/set security policies .* match application any/)
-    end
-
-    it 'should not allow all traffic by omitting match blocks' do
-      expect(stdout).to match(/set security policies .* match application/)
-    end
-
-    AUTHORIZED_APPS = input('authorized_apps') || []
-    it 'should not allow unauthorized applications' do
-      unauthorized_apps = []
-
-      stdout.lines.each do |line|
-        if line =~ /set security policies .* match application (\S+)/
-          app = Regexp.last_match(1)
-          unauthorized_apps << app unless AUTHORIZED_APPS.include?(app)
-        end
+  # Compare each configured line to the approved list
+  describe 'Configured security services' do
+    it 'should only include PPSM-approved services' do
+      configured_services.each do |line|
+        expect(
+          approved_services.any? { |approved| line.start_with?(approved) }
+        ).to eq(true), "Unauthorized service found: #{line}"
       end
-
-      expect(unauthorized_apps.uniq).to be_empty, "Found unauthorized applications: #{unauthorized_apps.uniq.join(', ')}"
     end
   end
 end

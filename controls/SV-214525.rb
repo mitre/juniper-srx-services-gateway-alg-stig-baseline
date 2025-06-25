@@ -31,7 +31,34 @@ set security zones security-zone <zone-name> interfaces <interface-name> host-in
   tag cci: ['CCI-000381']
   tag nist: ['CM-7 a']
 
-  describe 'Check the Juniper SRX Services Gateway Firewall if its configured as a DNS proxy. Providing this network service is unrelated to the role as a Firewall.' do
-    skip 'If a stanza exists for DNS (e.g., forwarders option), this is a finding.'
+  # Retrieve full configuration once
+  cmd = command('show configuration | display set')
+  output = cmd.stdout
+
+  describe 'Configuration retrieval' do
+    it 'should succeed' do
+      expect(cmd.exit_status).to eq(0)
+    end
+  end
+
+  # Check security zones for DNS service
+  describe 'Security zone service configuration' do
+    it 'should not enable DNS as a system service' do
+      expect(output).not_to match(/set security zones security-zone .* host-inbound-traffic system-services dns/)
+    end
+  end
+
+  # Check interfaces for DNS proxy
+  describe 'Interface-level DNS proxy' do
+    it 'should not configure DNS proxy on interfaces' do
+      expect(output).not_to match(/set interfaces .* unit \d+ family inet .* dns-proxy/)
+    end
+  end
+
+  # Check global forwarding-options for DNS proxy
+  describe 'Forwarding options DNS proxy' do
+    it 'should not define global DNS proxy options' do
+      expect(output).not_to match(/set forwarding-options dns-proxy/)
+    end
   end
 end

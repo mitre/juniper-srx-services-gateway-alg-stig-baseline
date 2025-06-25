@@ -34,7 +34,28 @@ set security zones security-zone <zone-name> interfaces <interface-name> host-in
   tag cci: ['CCI-000381']
   tag nist: ['CM-7 a']
 
-  describe 'Check the Juniper SRX Services Gateway Firewall if its configured as an NTP server. Providing this network service is unrelated to the role as a firewall.' do
-    skip 'If NTP is included in any of the zone or interface stanzas, this is a finding.'
+
+  # Run once and reuse output
+  cmd = command('show configuration | display set')
+  output = cmd.stdout
+
+  describe 'Configuration retrieval' do
+    it 'should succeed' do
+      expect(cmd.exit_status).to eq(0)
+    end
+  end
+
+  # Check security zones for NTP service
+  describe 'Zone configuration' do
+    it 'should not include NTP service' do
+      expect(output).not_to match(/set security zones security-zone .* host-inbound-traffic system-services ntp/)
+    end
+  end
+
+  # Check interfaces for NTP service binding
+  describe 'Interface configuration' do
+    it 'should not include NTP under interface unit' do
+      expect(output).not_to match(/set interfaces .* unit \d+ family inet address .* services ntp/)
+    end
   end
 end

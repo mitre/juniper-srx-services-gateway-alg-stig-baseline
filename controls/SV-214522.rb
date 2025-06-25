@@ -34,26 +34,20 @@ set system syslog file<LOG-NAME> match "RT_FLOW_SESSION "'
   tag cci: ['CCI-000140']
   tag nist: ['AU-5 b']
 
-  # Check if syslog configuration exists
-  describe command('show configuration system syslog') do
-    its('stdout') { should match (/(host)/) }           # Ensure a syslog host is configured
-    its('stdout') { should match (/(any)/) }            # Ensure "any" facility is being logged
-    its('stdout') { should match (/(authorization)/) }  # Ensure authorization logs are included
-  end
+  # Run the Junos command to show syslog configuration in "set" format
+  describe command('show configuration system syslog | display set') do
+    let(:output) { subject.stdout }
 
-  # Check if local logging is enabled
-  describe command('show configuration system syslog file messages') do
-    its('stdout') { should match (/(any any)/) }        # Ensure local logging is enabled for all facilities
-    its('stdout') { should match (/(authorization info)/) } # Ensure authorization logs are stored locally
-  end
+    # --- Check for at least one local log file destination ---
+    # This verifies that a log file is configured and a severity level is defined.
+    it 'should define at least one file destination with severity' do
+      expect(output).to match(/set system syslog file \S+ any \S+/)
+    end
 
-  # Simulate syslog server failure and check local logs
-  describe command('show log messages | match "local-storage"') do
-    its('stdout') { should_not be_empty } # Ensure logs are stored locally when syslog server is unreachable
-  end
-
-  # Check if logs are still being generated locally
-  describe command('show log messages | match "traffic log"') do
-    its('stdout') { should_not be_empty } # Ensure traffic logs are stored locally
+    # --- Check for logging of interactive commands ---
+    # Important for auditing administrator activity on the system.
+    it 'should define logging for interactive commands' do
+      expect(output).to match(/set system syslog file interactive-commands interactive-commands any/)
+    end
   end
 end

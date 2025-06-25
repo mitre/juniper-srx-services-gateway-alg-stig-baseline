@@ -58,92 +58,43 @@ set security policies from-zone trust to-zone untrust policy user-role-fw1 then 
   tag cci: ['CCI-000213', 'CCI-004891']
   tag nist: ['AC-3', 'SC-7 (29)']
 
+  # Run the command once, and use the result directly
+  cmd = command('show configuration | display set')
+  output = cmd.stdout
 
-  # Define the commands and keywords to check
-  commands = [
-    'show configuration security policies',
-    'show configuration',
-    'show configuration access'
-  ]
-
-  keywords = [
-    'source-identity',
-    'user-name',
-    'role',
-    'identity',
-    'user'
-  ]
-
-  # Flag to track if user-based policies are found
-  user_based_policies_found = false
-
-  # Check if user-based policies are configured
-  commands.each do |command|
-    keywords.each do |keyword|
-      describe command("#{command} | match #{keyword}") do
-        it 'should not return any output if user-based policies are not used' do
-          if subject.stdout.strip != ''
-            user_based_policies_found = true
-          end
-          expect(subject.stdout.strip).to eq ''
-        end
-      end
+  # Ensure command ran successfully
+  describe 'Configuration retrieval' do
+    it 'should successfully fetch configuration' do
+      expect(cmd.exit_status).to eq(0)
     end
   end
 
-  # Conditional logic based on whether user-based policies are found
-  if user_based_policies_found
-    # Check if source-identity is specified for all zone pairs
-    describe command('show configuration security policies | match source-identity') do
-      it 'should specify source-identity for all user-based policies' do
-        expect(subject.stdout.strip).not_to eq ''
+  # Check for user-firewall usage
+  if !output.match?(/set security user-firewall/)
+    describe 'User-based firewall not in use.' do
+      # if we want the control be set as Not Reviewed usee:
+      #skip 'This control is Not Applicable.'
+      # If we want the control to Pass use:
+      it 'This control is Not Applicable.' do
+        expect(true).to eq(true)
       end
     end
   else
-    # If no user-based policies are found, this is not a finding
-    describe 'User-based firewall policies' do
-      it 'are not used, so this is not a finding' do
-        expect(user_based_policies_found).to eq false
+    # Now test required attribute-based configurations
+
+    describe 'Attribute-based access enforcement' do
+      it 'should define identity-based match conditions in policies' do
+        expect(output).to match(/set security policies from-zone .* to-zone .* policy .* match source-identity/)
+      end
+
+      it 'should reference access profile with attribute-based authentication (LDAP/RADIUS)' do
+        expect(output).to match(/set access profile \S+ (ldap-options|radius-options)/)
+      end
+
+      it 'should use dynamic roles or authentication tables for access control' do
+        expect(output).to match(/set security user-firewall authentication-table/).or \
+                          match(/set firewall family inet filter .* term .* from source-address-name/)
       end
     end
   end
-
-  #  # First, check for user-based firewall configuration
-  # userfw_config = command('show configuration | display set | match "user"')
-  # describe userfw_config do
-  #   its('exit_status') { should eq 0 }
-  # end
-
-  # userfw_keywords = %w[
-  #   security userfirewall
-  #   access profile
-  #   source-identity
-  #   destination-identity
-  # ]
-
-  # userfw_used = userfw_keywords.any? { |kw| userfw_config.stdout.include?(kw) }
-
-  # if userfw_used
-  #   describe 'User-based firewall features' do
-  #     it 'are in use, skipping security policy source-identity check' do
-  #       expect(userfw_used).to eq true
-  #     end
-  #   end
-  # else
-  #   # If user-based firewall not used, check that source-identity is explicitly defined in security policies
-  #   from_zone = input('from_zone')
-  #   to_zone = input('to_zone')
-
-  #   policy_cmd = command("show configuration security policies from-zone #{from_zone} to-zone #{to_zone}")
-  #   describe policy_cmd do
-  #     its('exit_status') { should eq 0 }
-  #   end
-
-  #   describe "Security policies from #{from_zone} to #{to_zone}" do
-  #     it 'must include source-identity if user-based firewall is not used' do
-  #       output = policy_cmd.stdout
-  #       expect(output).to match(/source-identity/), "Expected 'source-identity' in policy, but none was found:\n#{output}"
-  #     end
-  #   end
-  # end
 end
