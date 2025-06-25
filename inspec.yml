@@ -46,6 +46,14 @@ inputs:
     required: true
     sensitive: true
 
+  # SV-214521
+  - name: syslog_server_ip
+    description: 'The system log server IP)'
+    type: string
+    value: ''
+    required: false
+    sensitive: false
+
   # SV-214527
   - name: approved_services
     description: 'Define approved protocols per PPSM CAL or organizational policy'
@@ -59,39 +67,6 @@ inputs:
     required: true
     sensitive: false
 
-  # SV-214533
-  - name: authorized_sources
-    description: 'The system group of the authorized source IP addresses (192.168.1.0/24, 10.0.0.0/16)'
-    type: array
-    value: []
-    required: false
-    sensitive: false
-
-  # SV-214521
-  - name: syslog_server_ip
-    description: 'The system log server IP)'
-    type: string
-    value: ''
-    required: false
-    sensitive: false
-
-  # SV-214527
-  - name: authorized_apps
-    description: 'Define approved applications per PPSM CAL or internal policy'
-    type: array
-    value: [
-      'junos-https',
-      'junos-http',
-      'junos-ssh',
-      'junos-dns',
-      'junos-ping',
-      'junos-snmp',
-      'junos-telnet',
-      'junos-ntp'
-    ]
-    required: false
-    sensitive: false
-
   # SV-214528
   - name: max_timeout
     description: 'Define the max idle-timeout for application sessions or any custom application'
@@ -103,6 +78,14 @@ inputs:
   # SV-214533
   - name: authorized_destinations
     description: 'The system group of the authorized destination IP addresses (172.16.0.0/24, 192.168.2.0/24)'
+    type: array
+    value: []
+    required: false
+    sensitive: false
+
+  # SV-214533
+  - name: authorized_sources
+    description: 'The system group of the authorized source IP addresses (192.168.1.0/24, 10.0.0.0/16)'
     type: array
     value: []
     required: false
