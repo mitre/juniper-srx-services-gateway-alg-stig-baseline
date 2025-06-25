@@ -10,7 +10,7 @@ description: null
 version: 3.3.0
 supports: []
 depends: []
-inspec_version: "~>6.0"
+inspec_version: "~>4.0"
 
 
 ### INPUTS ###
