@@ -40,23 +40,65 @@ set security policies from-zone trust to-zone untrust policy default-permit then
   tag cci: ['CCI-001851']
   tag nist: ['AU-4 (1)']
 
-  # Check if syslog configuration exists
-  describe command('show configuration system syslog') do
-    its('stdout') { should match (/(host)/) }           # Ensure a syslog host is configured
-    its('stdout') { should match (/(log-prefix)/) }     # Ensure log-prefix is set for identification
-    its('stdout') { should match (/(any)/) }            # Ensure "any" facility is being logged
-    its('stdout') { should match (/(authorization)/) }  # Ensure authorization logs are included
+  #-----------------------------------------------------------------
+  # Use this code if Syslog server is not required (test is skipped)
+  #-----------------------------------------------------------------
+  # syslog_config = command('show configuration system syslog | display set | match "host "').stdout.strip
+
+  # if syslog_config.empty?
+  #   impact 0.0
+  #   describe 'Syslog configuration' do
+  #     skip 'Syslog is not enabled on the device — skipping syslog tests.'
+  #   end
+  # else
+  #   # Check if syslog configuration contains expected fields
+  #   describe command('show configuration system syslog') do
+  #     its('stdout') { should match(/host/) }           # Ensure a syslog host is configured
+  #     its('stdout') { should match(/log-prefix/) }     # Ensure log-prefix is set for identification
+  #     its('stdout') { should match(/any/) }            # Ensure "any" facility is being logged
+  #     its('stdout') { should match(/authorization/) }  # Ensure authorization logs are included
+  #   end
+
+  #   syslog_server_ip = input('syslog_server_ip')
+
+  #   # Check if the syslog server is reachable
+  #   describe command("ping #{syslog_server_ip}") do
+  #     its('stdout') { should match(/bytes from/) }       # Ensure the syslog server is reachable
+  #   end
+
+  #   # Check if audit logs are being sent to the syslog server
+  #   describe command("show log messages | match #{syslog_server_ip}") do
+  #     its('stdout') { should_not be_empty }              # Ensure logs are being sent to the syslog server
+  #   end
+  # end  
+
+  # Check if any remote syslog host is configured
+  syslog_host_config = command('show configuration system syslog | display set | match "host "').stdout.strip
+
+  describe 'Remote syslog host configuration check' do
+    it 'should have at least one remote syslog host configured' do
+      expect(syslog_host_config).not_to be_empty, 
+        'No remote syslog hosts are configured — Ensure at least one Syslog server is configured.'
+    end
   end
 
-  syslog_server_ip = input('syslog_server_ip')
+  # Proceed with deeper tests only if syslog is configured
+  unless syslog_host_config.empty?
+    describe command('show configuration system syslog') do
+      its('stdout') { should match(/host/) }           # Remote host exists
+      its('stdout') { should match(/log-prefix/) }     # Log prefix set
+      its('stdout') { should match(/any/) }            # 'any' facility used
+      its('stdout') { should match(/authorization/) }  # Auth logs enabled
+    end
 
-  # Check if the syslog server is reachable
-  describe command("ping #{syslog_server_ip}") do
-    its('stdout') { should match (/bytes from/) }       # Ensure the syslog server is reachable
-  end
+    syslog_server_ip = input('syslog_server_ip')
 
-  # Check if audit logs are being sent to the syslog server
-  describe command("show log messages | match #{syslog_server_ip}") do
-    its('stdout') { should_not be_empty }              # Ensure logs are being sent to the syslog server
-  end
+    describe command("ping #{syslog_server_ip}") do
+      its('stdout') { should match(/bytes from/) }     # Server reachable
+    end
+
+    describe command("show log messages | match #{syslog_server_ip}") do
+      its('stdout') { should_not be_empty }            # Logs reaching server
+    end
+  end  
 end

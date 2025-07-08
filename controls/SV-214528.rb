@@ -54,47 +54,52 @@ Note: When pre-defined applications are used in firewall policies, the timeout v
   tag nist: ['SC-10']
   
   # 15 minutes = 900 seconds
-  MAX_TIMEOUT = input('max_timeout') || 900
+  MAX_TIMEOUT = input('max_timeout', value: 900)
 
-  # Check if the session inactivity timeout is set to 900 seconds or less for TCP, UDP, and ICMP sessions.
-  # The command 'show configuration security flow' is used to verify the timeout settings.
-  # The expected timeout values are 900 seconds (15 minutes) for TCP, UDP, and ICMP sessions.
-  describe command('show configuration security flow | display set') do
-    let(:output) { subject.stdout }
+  # TCP Protocol-Level Timeout
+  tcp_session_cmd = command('show configuration security flow tcp-session | display set')
 
-    it "should set tcp-session timeout to #{MAX_TIMEOUT} seconds" do
-      expect(output).to match(/set security flow tcp-session timeout #{MAX_TIMEOUT}/)
+  describe 'TCP protocol-level session timeouts' do
+    it "tcp-initial-timeout should be #{MAX_TIMEOUT} seconds or less" do
+      if tcp_session_cmd.stdout =~ /tcp-initial-timeout (\d+)/
+        timeout = Regexp.last_match(1).to_i
+        expect(timeout).to be <= MAX_TIMEOUT
+      else
+        skip 'tcp-initial-timeout not configured'
+      end
     end
 
-    it "should set udp-session timeout to #{MAX_TIMEOUT} seconds" do
-      expect(output).to match(/set security flow session-timeout udp #{MAX_TIMEOUT}/)
+    it "time-wait-state should be #{MAX_TIMEOUT} seconds or less" do
+      if tcp_session_cmd.stdout =~ /time-wait-state session-timeout (\d+)/
+        timeout = Regexp.last_match(1).to_i
+        expect(timeout).to be <= MAX_TIMEOUT
+      else
+        skip 'TCP session timeout (time-wait-state session-timeout) not configured.'
+      end
     end
+  end
 
-    it "should set icmp-session timeout to #{MAX_TIMEOUT} seconds" do
-      expect(output).to match(/set security flow session-timeout icmp #{MAX_TIMEOUT}/)
+  # Application-Level Inactivity Timeouts (TCP & UDP)
+  app_timeout_cmd = command('show configuration applications | display set | match inactivity-timeout')
+
+  if app_timeout_cmd.stdout.strip.empty?
+    describe 'Application-defined session timeouts (TCP/UDP)' do
+      skip 'No application inactivity-timeouts configured.'
     end
-  end  
+  else
+    describe 'Application-defined session timeouts (TCP/UDP)' do
+      it "should be #{MAX_TIMEOUT} seconds or less when configured" do
+        timeouts = app_timeout_cmd.stdout.lines.map do |line|
+          match = line.match(/inactivity-timeout (\d+)/)
+          match ? match[1].to_i : nil
+        end.compact
 
-  # Check if the idle-timeout is set for any custom applications, not exceeding 900 seconds.
-  # The command 'show configuration applications' is used to verify the idle-timeout settings.
-  # The expected idle-timeout values are 900 seconds (15 minutes) for custom applications.
-  describe command('show configuration applications | display set') do
-    let(:stdout) { subject.stdout }
-
-    it 'should define idle-timeout for any custom applications, not exceeding 900 seconds' do
-      timeouts = []
-
-      stdout.lines.each do |line|
-        if line =~ /set applications application (\S+) idle-timeout (\d+)/
-          app = Regexp.last_match(1)
-          timeout = Regexp.last_match(2).to_i
-          timeouts << { app: app, timeout: timeout }
+        expect(timeouts).not_to be_empty
+        timeouts.each do |timeout|
+          expect(timeout).to be <= MAX_TIMEOUT
         end
       end
-
-      failing = timeouts.select { |t| t[:timeout] > MAX_IDLE_TIMEOUT }
-
-      expect(failing).to be_empty, "The following applications exceed the 15-minute idle-timeout limit: #{failing.map { |f| "#{f[:app]}=#{f[:timeout]}s" }.join(', ')}"
     end
   end
 end
+

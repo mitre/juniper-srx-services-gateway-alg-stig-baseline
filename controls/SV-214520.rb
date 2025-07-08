@@ -34,17 +34,49 @@ set security policies from-zone untrust to-zone trust policy default-deny then l
   tag nist: ['AU-12 c']
 
   # Define the expected configuration or behavior
-  describe command('show configuration security log') do
-    its('stdout') { should match (/(deny)/) }            # Matches the word "deny"
-    its('stdout') { should match (/(event-rate)/) }      # Matches the word "event-rate"
-    its('stdout') { should match (/(match condition)/) } # Matches the phrase "match condition"
+  # describe command('show configuration security log') do
+  #   its('stdout') { should match (/(deny)/) }            # Matches the word "deny"
+  #   its('stdout') { should match (/(event-rate)/) }      # Matches the word "event-rate"
+  #   its('stdout') { should match (/(match condition)/) } # Matches the phrase "match condition"
+  # end
+
+  # describe command('show log messages | match "denied"') do
+  #   its('stdout') { should_not be_empty }    # Ensures there are logs for denied attempts
+  # end
+
+  # describe command('show configuration security zones') do
+  #   its('stdout') { should match (/(log)/) } # Matches the word "log"
+  # end
+
+#####################################################
+
+  # STEP 1: Verify local syslog logging to a file is configured
+  syslog_file_cmd = command('show configuration system syslog | display set | match "file"')
+  syslog_file_output = syslog_file_cmd.stdout.strip
+
+  describe 'Local syslog file configuration' do
+    it 'should include at least one configured file log target' do
+      expect(syslog_file_output).to match(/^set system syslog file/)
+    end
   end
 
-  describe command('show log messages | match "denied"') do
-    its('stdout') { should_not be_empty }    # Ensures there are logs for denied attempts
+  # STEP 2: Check that firewall log entries are being generated
+  firewall_log_cmd = command('show firewall log')
+  firewall_log_output = firewall_log_cmd.stdout.strip
+
+  describe 'Firewall log presence' do
+    it 'should not be empty' do
+      expect(firewall_log_output).not_to be_empty
+    end
   end
 
-  describe command('show configuration security zones') do
-    its('stdout') { should match (/(log)/) } # Matches the word "log"
+  # STEP 3: Check that discarded packet actions (D) are being logged
+  describe 'Unsuccessful access attempts (discarded packets)' do
+    it 'should appear in the firewall log' do
+      discard_matches = firewall_log_output.lines.select { |line| line.include?(' D ') || line.strip.end_with?('D') }
+
+      expect(discard_matches).not_to be_empty, "No discarded (D) packet actions found in firewall log. Unsuccessful access attempts may not be logged."
+    end
   end
 end
+

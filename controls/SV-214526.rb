@@ -31,14 +31,19 @@ set security zones security-zone <zone-name> interfaces <interface-name> host-in
   tag cci: ['CCI-000381']
   tag nist: ['CM-7 a']
 
-  # Define the command that retrieves the DHCP server configuration on the Juniper SRX.
-  # The command `show configuration system services dhcp` shows DHCP server configurations.
-  describe command('show configuration system services dhcp') do
-    its('stdout') { should_not match(/enabled|dhcp/) }
+  # Check if DHCP server is configured under system services
+  describe command('show configuration system services') do
+    it 'should not configure the device as a DHCP server' do
+      expect(subject.stdout).not_to match(/^\s*dhcp\s*{/), 
+        'DHCP server configuration found under system services'
+    end
   end
 
-  # The command `show configuration system services` shows all configured services.
-  describe command('show configuration system services') do
-    its('stdout') { should_not include('dhcp') }
+  # Extra validation: ensure the dhcp block is empty or not present
+  describe command('show configuration system services dhcp') do
+    it 'should return no DHCP server configuration' do
+      expect(subject.stdout.strip).to eq(''),
+        'DHCP configuration should not be present on the firewall'
+    end
   end
 end

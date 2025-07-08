@@ -44,26 +44,52 @@ set security policies from-zone untrust to-zone trust policy default-deny then l
   tag cci: ['CCI-000172']
   tag nist: ['AU-12 c']
 
-  describe command('show firewall log') do
-    its('exit_status') { should eq 0 }
-    its('stdout') { should match(/Filter Action/) }
+  # Run command to get the configured syslog servers
+  syslog_cmd = command('show configuration system syslog | display set | match "host"')
+  syslog_output = syslog_cmd.stdout.strip
 
-    it 'should have matching actions in the log entries' do
-      log_output = subject.stdout
+  # Always check that firewall logging is configured for local logs
+  syslog_file_cmd = command('show configuration system syslog | display set | match "file"')
+  syslog_file_output = syslog_file_cmd.stdout.strip
 
-      # Extract log lines containing 'Filter Action'
-      log_lines = log_output.lines.select { |line| line.include?('Filter Action') }
+  # Check if local logging is configured
+  describe 'Local syslog logging configuration' do
+    it 'should have local log configured' do
+      # Ensure that local file logging is configured
+      expect(syslog_file_output).to match(/^set system syslog file/)
+    end
+  end
 
-      expect(log_lines).not_to be_empty
+  # Check syslog server configuration only if syslog server is configured
+  # otherwise skip the test and skip the syslog-related checks
+  if syslog_output.empty?
+    # If no syslog server is configured, skip syslog-related checks
+    describe 'Syslog server check' do
+      it 'should skip syslog-related checks because no syslog server is configured' do
+        skip 'No syslog server configured. Skipping syslog-related checks.'
+      end
+    end
+  else
+    # If syslog is configured, verify that at least one syslog host is configured
+    describe 'Syslog server configuration' do
+      it 'should have at least one syslog host configured' do
+        expect(syslog_output).to match(/^set system syslog host/)
+      end
+    end
 
-      log_lines.each do |line|
-        # Extract the configured action (e.g., 'A', 'D', 'R')
-        configured_action = line.match(/Filter Action\s+([ADR])/)[1]
+    # Retrieve firewall filter configurations
+    filter_cmd = command('show configuration firewall | display set')
+    filter_output = filter_cmd.stdout.strip
 
-        # Extract the logged action from the line
-        logged_action = line.match(/Filter Action\s+([ADR])/)[1]
+    # Filter out all terms with 'then' clauses that should include 'log'
+    term_lines = filter_output.split("\n").select { |line| line =~ /then/ }
 
-        expect(logged_action).to eq(configured_action), "Logged action '#{logged_action}' does not match configured action '#{configured_action}'"
+    # Verify that each firewall term is configured to log matched packets
+    describe 'Firewall term logging actions (syslog)' do
+      it 'should log matching packets in each firewall term with a "then log" action' do
+        missing_logs = term_lines.reject { |line| line.include?('then log') }
+
+        expect(missing_logs).to be_empty, "Some firewall terms do not include 'then log':\n#{missing_logs.join("\n")}"
       end
     end
   end

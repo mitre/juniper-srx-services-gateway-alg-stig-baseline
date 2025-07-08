@@ -46,8 +46,7 @@ Example: set security zones security-zone untrust screen untrust-screen'
   tag nist: ['SC-5 a', 'SC-5 b']
 
   # Check for the specific IDS screen settings under security screen configuration
-  describe command('show configuration security screen ids-option untrust-screen') do
-    # Ensure each of the specific settings are present and correctly configured
+  describe command('show configuration security screen ids-option untrust-screen | display set') do
     its('stdout') { should match(/icmp ip-sweep threshold 1000/) }
     its('stdout') { should match(/tcp port-scan threshold 1000/) }
     its('stdout') { should match(/tcp syn-flood alarm-threshold 1000/) }
@@ -59,5 +58,5 @@ Example: set security zones security-zone untrust screen untrust-screen'
     its('stdout') { should match(/udp udp-sweep threshold 1000/) }
     its('stderr') { should eq '' }
     its('exit_status') { should eq 0 }
-  end  
+  end 
 end
