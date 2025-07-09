@@ -22,7 +22,7 @@ If load balancing is not implemented on the perimeter firewall, this is a findin
   tag cci: ['CCI-002385', 'CCI-004866']
   tag nist: ['SC-5 a', 'SC-5 b']
 
-  describe 'Check it the Juniper SRX Services Gateway Firewall ius required to implement load balancing on the perimeter firewall.' do
+  describe 'Check if the Juniper SRX Services Gateway Firewall is required to implement load balancing on the perimeter firewall.' do
     skip 'If load balancing is necessary and not implemented on the perimeter firewall, this is a finding.'
   end
 end

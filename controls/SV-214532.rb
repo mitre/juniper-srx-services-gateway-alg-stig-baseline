@@ -32,13 +32,19 @@ set security zones security-zone trust screen untrust-screen'
   tag cci: ['CCI-001094', 'CCI-004866']
   tag nist: ['SC-5 (1)', 'SC-5 b']
 
-  # Check if outbound zones have DoS screens applied
-  describe command('show configuration security zones') do
-    its('stdout') { should match(/security-zone .* screen .*dos-screen/) }
-  end
+  # Get list of policies to determine which zones initiate outbound traffic
+  policies_output = command('show configuration security policies | display set').stdout
 
-  # Check if interfaces are assigned to zones with DoS screens
-  describe command('show configuration security zones') do
-    its('stdout') { should match(/interface .* zone .*dos-screen/) }
+  # Extract all unique outbound zones from "from-zone"
+  outbound_zones = policies_output.scan(/set security policies from-zone (\S+) to-zone (\S+)/).map(&:first).uniq
+
+  outbound_zones.each do |zone|
+    describe "Security zone #{zone} DoS screen configuration" do
+      let(:zone_config) { command("show configuration security zones security-zone #{zone} | display set | match screen").stdout }
+
+      it "should have a DoS screen configured" do
+        expect(zone_config).to match(/screen/), "Zone #{zone} is missing a DoS screen"
+      end
+    end
   end
 end

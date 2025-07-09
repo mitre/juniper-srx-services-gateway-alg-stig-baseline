@@ -71,7 +71,7 @@ Example: set security zones security-zone untrust screen untrust-screen'
   end
 
   # Check the specific IDS signature options
-  describe command('show configuration security screen ids-option untrust-screen') do
+  describe command('show configuration security screen ids-option untrust-screen | display set') do
     # ICMP-related checks
     its('stdout') { should match(/icmp ping-death/)}
     
