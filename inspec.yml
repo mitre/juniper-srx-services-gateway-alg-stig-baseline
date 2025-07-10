@@ -75,6 +75,13 @@ inputs:
     required: false
     sensitive: false
   
+  # SV-214530
+  - name: load_balance_required
+    description: 'Whether load balancing is required on the perimeter firewall'
+    type: boolean
+    value: false
+    require: true
+
   # SV-214533
   - name: authorized_destinations
     description: 'The system group of the authorized destination IP addresses (172.16.0.0/24, 192.168.2.0/24)'
@@ -89,6 +96,14 @@ inputs:
     type: array
     value: []
     required: false
+    sensitive: false
+
+  # SV-214537
+  - name: monitored_zones
+    description: 'The security zones that should be monitored for inbound traffic'
+    type: array
+    value: ['trust', 'untrust'] # Set default zones to monitor
+    required: true
     sensitive: false
 
   # SV-214539

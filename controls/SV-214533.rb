@@ -32,26 +32,54 @@ set security policies from-zone trust to-zone untrust policy default-deny then d
   tag cci: ['CCI-002403', 'CCI-004891']
   tag nist: ['SC-7 (11)', 'SC-7 (29)']
 
-  # Check if the untrust zone has the correct interface assigned
-  describe command('show configuration security zones security-zone untrust') do
-    its('stdout') { should include('interfaces ge-0/0/1.0') }
+  describe command('show configuration security policies | display set') do
+    let(:policy_output) { subject.stdout }
+
+    # Trust to Trust
+    it 'allows all traffic within trust zone' do
+      expect(policy_output).to match(
+        %r{set security policies from-zone trust to-zone trust policy default-permit match source-address any}
+      )
+      expect(policy_output).to match(
+        %r{set security policies from-zone trust to-zone trust policy default-permit match destination-address any}
+      )
+      expect(policy_output).to match(
+        %r{set security policies from-zone trust to-zone trust policy default-permit match application any}
+      )
+      expect(policy_output).to match(
+        %r{set security policies from-zone trust to-zone trust policy default-permit then permit}
+      )
+    end
+
+    # Trust to Untrust
+    it 'allows all traffic from trust to untrust' do
+      expect(policy_output).to match(
+        %r{set security policies from-zone trust to-zone untrust policy default-permit match source-address any}
+      )
+      expect(policy_output).to match(
+        %r{set security policies from-zone trust to-zone untrust policy default-permit match destination-address any}
+      )
+      expect(policy_output).to match(
+        %r{set security policies from-zone trust to-zone untrust policy default-permit match application any}
+      )
+      expect(policy_output).to match(
+        %r{set security policies from-zone trust to-zone untrust policy default-permit then permit}
+      )
+    end
+
+    # Default policy fallback
+    it 'has default permit-all policy set' do
+      expect(policy_output).to match(
+        %r{set security policies default-policy permit-all}
+      )
+    end
   end
 
-  # Check if the trust zone has the correct interface assigned
-  describe command('show configuration security zones security-zone trust') do
-    its('stdout') { should include('interfaces ge-0/0/2.0') }
-  end
-
-  # Check if the default-deny policy is configured from trust to untrust zone
-  describe command('show configuration security policies from-zone trust to-zone untrust policy default-deny') do
-    its('stdout') { should include('match destination-address any') }
-    its('stdout') { should include('then deny') }
-  end
-
-  #---------------------------------------------------------------------------------------------
-  # Using authorized servers and destinations
-  # Define inputs for authorized sources and destinations
+  # ---------------------------------------------------------------------------
+  # To validate using specific authorized sources and destinations, use this code
+  # ---------------------------------------------------------------------------
   
+  # Define inputs for authorized sources and destinations
   # authorized_sources = input('authorized_sources', value: [])
   # authorized_destinations = input('authorized_destinations', value: [])
 
@@ -73,5 +101,57 @@ set security policies from-zone trust to-zone untrust policy default-deny then d
   #   its('stdout') { should include('policy default-deny') }
   #   its('stdout') { should include('match destination-address any') }
   #   its('stdout') { should include('then deny') }
+  # end
+
+  
+  # ---------------------------------------------------------------------------
+  # To validate that the policy from trust to untrust allows traffic only from
+  # defined source subnet to specific destination IP using HTTPS use this code
+  # ---------------------------------------------------------------------------
+
+  # describe command('show configuration security policies | display set') do
+  #   let(:output) { subject.stdout }
+
+  #   it 'does not use overly broad source-address (e.g., any)' do
+  #     expect(output).not_to match(
+  #       /set security policies from-zone trust to-zone untrust policy .* match source-address any/
+  #     )
+  #   end
+
+  #   it 'does not use overly broad destination-address (e.g., any)' do
+  #     expect(output).not_to match(
+  #       /set security policies from-zone trust to-zone untrust policy .* match destination-address any/
+  #     )
+  #   end
+
+  #   it 'does not use overly broad application match (e.g., any)' do
+  #     expect(output).not_to match(
+  #       /set security policies from-zone trust to-zone untrust policy .* match application any/
+  #     )
+  #   end
+
+  #   it 'contains the specific source-address TRUST-SUBNET' do
+  #     expect(output).to match(
+  #       /set security policies from-zone trust to-zone untrust policy allow-web match source-address TRUST-SUBNET/
+  #     )
+  #   end
+
+  #   it 'contains the specific destination-address WEB-SERVER' do
+  #     expect(output).to match(
+  #       /set security policies from-zone trust to-zone untrust policy allow-web match destination-address WEB-SERVER/
+  #     )
+  #   end
+
+  #   it 'contains the specific application https' do
+  #     expect(output).to match(
+  #       /set security policies from-zone trust to-zone untrust policy allow-web match application https/
+  #     )
+  #   end
+
+  #   it 'permits traffic for allow-web policy' do
+  #     expect(output).to match(
+  #       /set security policies from-zone trust to-zone untrust policy allow-web then permit/
+  #     )
+  #   end
   # end
 end

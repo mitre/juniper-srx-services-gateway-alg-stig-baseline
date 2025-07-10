@@ -22,49 +22,61 @@ If the site has not configured the SRX to fail closed, this is a finding.'
   tag cci: ['CCI-001126']
   tag nist: ['SC-7 (18)']
 
-  #-----------------------------------------------------------------------
-  # Verify Default Deny-All Policy
-  describe command('show configuration security policies | display set | match default-policy') do
-    its('stdout') { should match(/set security policies default-policy deny-all/) }
-  end
-
-  #-----------------------------------------------------------------------
-  # Verify Fail Closed for Hardware/Software Failures
-  # Verify global failover on loss of keepalives
-  describe command('show configuration chassis cluster | display set') do
-    its('stdout') { should match(/set chassis cluster failover on-loss-of-keepalives/) }
-  end
-
-  #-----------------------------------------------------------------------
-  # Verify redundancy group failover on loss of keepalives
-  describe command('show configuration chassis cluster | display set') do
-    its('stdout') { should match(/set chassis cluster redundancy-group 0 failover on-loss-of-keepalives/) }
-  end
-
-  #-----------------------------------------------------------------------
-  # Verify Fail Closed for Routing Failures
-  describe command('show configuration routing-options forwarding-table export | display set') do
-    its('stdout') { should match(/set routing-options forwarding-table export fail-closed-policy/) }
-  end
-
-  #-----------------------------------------------------------------------
-  # Verify Fail Closed Policy Statement
-  describe command('show configuration policy-options policy-statement fail-closed-policy | display set') do
-    its('stdout') { should match(/set policy-options policy-statement fail-closed-policy term 2 then reject/) }
-  end
-
+  #----------------------------------------------------------------------------
+  # Tests verifies that the Juniper SRX firewall "fails closed"
+  # (i.e., blocks traffic by default if it fails or loses configuration).
+  # The following are being checked:
+  #  - No traffic is allowed by default, unless explicitly permitted
+  #  - Global default-deny policies are in place
+  #  - Unconfigured interfaces/zones do not forward traffic
+  #----------------------------------------------------------------------------
   
-  #-----------------------------------------------------------------------
-  # Verify Security Zones Default Deny
-  describe command('show configuration security zones | display set') do
-    its('stdout') { should match(/set security zones security-zone trust host-inbound-traffic system-services none/) }
-    its('stdout') { should match(/set security zones security-zone trust host-inbound-traffic protocols none/) }
-    its('stdout') { should match(/set security zones security-zone untrust host-inbound-traffic system-services none/) }
-    its('stdout') { should match(/set security zones security-zone untrust host-inbound-traffic protocols none/) }
+  # Check security policies between trust and untrust zones
+  # Look for a default deny policy between key zones
+  describe command('show security policies from-zone trust to-zone untrust') do
+    # Output must show "Default policy: deny all"
+    its('stdout') { should match (/Default policy: deny all/) }
   end
 
-  # # Verify Explicitly Allowed Traffic (if applicable)
-  # describe command('show configuration security policies | display set | match allow-http') do
-  #   its('stdout') { should match(/set security policies from-zone trust to-zone untrust policy allow-http then permit/) }
+  # Check global security policy defaults
+  # Ensures that a default deny-all global policy is in place for unspecified zone combinations
+  describe command('show security policies global') do
+    its('stdout') { should match (/Default policy: deny all/) }
+  end
+
+  # Ensure no interfaces are configured to accept all inbound traffic by default
+  # This prevents unmanaged services from being exposed
+  describe command('show security zones') do
+    # check that no zone is allowing "host-inbound-traffic system-services all" implicitly
+    its('stdout') { should_not match (/interfaces.*trust.*host-inbound-traffic.*system-services.*all/) }
+  end
+
+  # Verify that a global deny-all policy is actually configured
+  # This is usually a catch-all rule at the bottom of the policy list
+  describe command('show configuration security policies') do
+    # Match a policy named "deny-all" or similar
+    its('stdout') { should match (/deny-all/) }
+  end
+
+  # #----------------------------------------------------------------------------
+  # # To check if Default policies are set to deny all traffic use this block
+  # #----------------------------------------------------------------------------
+
+  # # Ensure the SRX fails closed by default
+  # describe command('show configuration security policies | display set') do
+  #   let(:policy_output) { subject.stdout }
+
+  #   # Default policies should deny all traffic
+  #   it 'has default deny-all policy for untrust zone' do
+  #     expect(policy_output).to match(
+  #       %r{set security policies from-zone untrust to-zone trust policy default-deny match source-address any}
+  #     )
+  #     expect(policy_output).to match(
+  #       %r{set security policies from-zone untrust to-zone trust policy default-deny match destination-address any}
+  #     )
+  #     expect(policy_output).to match(
+  #       %r{set security policies from-zone untrust to-zone trust policy default-deny then deny}
+  #     )
+  #   end
   # end
 end

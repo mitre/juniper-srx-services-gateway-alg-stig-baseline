@@ -22,7 +22,16 @@ If load balancing is not implemented on the perimeter firewall, this is a findin
   tag cci: ['CCI-002385', 'CCI-004866']
   tag nist: ['SC-5 a', 'SC-5 b']
 
-  describe 'Check if the Juniper SRX Services Gateway Firewall is required to implement load balancing on the perimeter firewall.' do
-    skip 'If load balancing is necessary and not implemented on the perimeter firewall, this is a finding.'
-  end
+  is_required = input('load_balance_required')
+
+  if is_required
+    describe 'Check if the Juniper SRX Services Gateway Firewall is required to implement load balancing on the perimeter firewall.' do
+      skip 'If load balancing is necessary and not implemented on the perimeter firewall, this is a finding.'
+    end
+  else
+    impact 0.0
+    describe 'Load balancing requirement' do
+      skip 'Load balancing is not required for this system; control is not applicable.'
+    end
+  end  
 end

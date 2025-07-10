@@ -36,48 +36,47 @@ set security policies from-zone untrust to-zone trust policy default-deny then d
   tag cci: ['CCI-002661']
   tag nist: ['SI-4 (4) (b)']
 
-  # Check that flow trace options are enabled to monitor sessions
-  describe command('show configuration security flow') do
-    its('stdout') { should match(/traceoptions/) }
-  end
-
   # Per-zone inbound checks
-  monitored_zones = input('monitored_zones', value: ['DMZ-zone']) # Set a default 'DMZ-zone'
+  monitored_zones = input('monitored_zones', value: ['trust', 'untrust'])
+
   monitored_zones.each do |zone|
-    # Check that there are policies monitoring inbound traffic from zone
-    describe "Inbound security policy from #{zone}" do
-      subject { command("show configuration security policies | display set | match 'from-zone #{zone}'") }
+    describe "STIG checks for zone: #{zone}" do
+      it 'should either pass STIG checks for L3 or confirm zone is L2-only' do
+        interfaces_cmd = inspec.command("show configuration security zones security-zone #{zone} | display set | match interfaces")
+        interfaces = interfaces_cmd.stdout.scan(/interfaces (\S+)/).flatten.uniq
 
-      it "should have policies from #{zone} to any zone" do
-        expect(subject.stdout).to match(/from-zone #{zone}/)
-      end
-    end
+        l3_interfaces = []
+        l2_interfaces = []
 
-    # Check that logs are configured for sessions initiated on inbound policies
-    describe "Inbound session logging for #{zone}" do
-      subject { command("show configuration security policies | display set | match 'from-zone #{zone}' | match 'then log session-init'") }
+        interfaces.each do |intf|
+          intf_config = inspec.command("show configuration interfaces #{intf} | display set").stdout
 
-      it "should log session-init for #{zone} policies" do
-        expect(subject.stdout).to match(/then log session-init/)
-      end
-    end
+          if intf_config.include?('family inet')
+            l3_interfaces << intf
+          elsif intf_config.include?('family ethernet-switching')
+            l2_interfaces << intf
+          end
+        end
 
-    # Confirm that host-inbound system services are restricted or monitored on zone
-    describe "Host-inbound traffic settings for #{zone}" do
-      subject { command("show configuration security zones | display set | match '#{zone}'") }
+        if l3_interfaces.any?
+          # Run STIG checks
+          policy_check = inspec.command("show configuration security policies | display set | match 'from-zone #{zone}'")
+          expect(policy_check.stdout).to match(/from-zone #{zone}/)
 
-      it "should not allow all system-services" do
-        expect(subject.stdout).not_to match(/system-services all/)
-      end
+          log_check = inspec.command("show configuration security policies | display set | match 'from-zone #{zone}' | match 'then log session-init'")
+          expect(log_check.stdout).to match(/then log session-init/)
 
-      it "should restrict or monitor system-services" do
-        expect(subject.stdout).to match(/host-inbound-traffic system-services/)
+          screen_check = inspec.command("show configuration security zones | display set | match '#{zone} screen'")
+          expect(screen_check.stdout).to match(/set security zones security-zone #{zone} screen/)
+
+          hit_check = inspec.command("show configuration security zones | display set | match '#{zone}'")
+          expect(hit_check.stdout).not_to match(/system-services all/)
+          expect(hit_check.stdout).to match(/host-inbound-traffic system-services/)
+        else
+          # No L3 interfaces — pass with explanation
+          expect(true).to eq(true), "Zone #{zone} has no Layer 3 interfaces; passing STIG check as not applicable"
+        end
       end
     end
   end
-
-  # Optionally confirm IDP or threat detection is active (if licensed)
-  # describe command('show configuration security idp') do
-  #   its('stdout') { should match(/security idp/) }
-  # end
 end

@@ -25,17 +25,21 @@ If the default-policy is not set to deny-all, this is a finding.'
   tag cci: ['CCI-001109']
   tag nist: ['SC-7 (5)']
 
+  
   describe command('show configuration security policies | display set') do
     let(:stdout) { subject.stdout }
-
+    
+    # Test 1: Check for a default deny-all policy
     it 'should contain a default deny-all policy' do
       expect(stdout).to match(/set security policies default-policy deny-all/)
     end
 
+    # Test 2: Ensure no allow-all policies exist
     it 'should not contain an allow-all default policy' do
       expect(stdout).not_to match(/set security policies default-policy allow-all/)
     end
 
+    # Test 3: Ensure that at least one explicit policy exists
     it 'should contain at least one explicit policy permitting traffic' do
       expect(stdout).to match(/set security policies from-zone .+ to-zone .+ policy .+ match/)
       expect(stdout).to match(/set security policies from-zone .+ to-zone .+ policy .+ then permit/)

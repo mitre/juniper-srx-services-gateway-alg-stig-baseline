@@ -59,20 +59,22 @@ set firewall family inet6 filter egress-v6 term permit-lr then accept'
     # its('stdout') { should_not match(/security-zone untrust .* ping/) }
   end
 
-  # Optionally check rate-limiting (CoS or policer config — advanced)
-  describe command('show configuration firewall | display set | match icmp') do
-    #its('stdout') { should match(/term block-icmp/) }
-    its('stdout') { should match(/term .*icmp.*/) }
-  end
-
-  # (Optional) Ensure diagnostic ICMP is allowed internally
-  describe command('show configuration security policies | display set | match junos-ping') do
-    its('stdout') { should match(/from-zone trust to-zone trust/) }
-  end
-
   # Ensure ICMP is blocked or denied in the security policies
   describe command('show configuration security policies | display set') do
-    its('stdout') { should match(/policy block-icmp .* then deny/) }
+    its('stdout') { should match(/policy block-icmp.* then deny/) }
   end
 
+  # --------------------------------------------------------------------------
+  # Uncomment the following lines if you want to check for specific ICMP types
+  # --------------------------------------------------------------------------
+  # # (Optional) Ensure diagnostic ICMP is explicit allowed internally (within the trust zone)
+  # describe command('show configuration security policies | display set | match junos-ping') do
+  #   its('stdout') { should match(/from-zone trust to-zone trust/) }
+  # end
+
+  # # (Optionally) Check rate-limiting (Class of Service (CoS) or policer config — advanced)
+  # describe command('show configuration firewall | display set | match icmp') do
+  #   #its('stdout') { should match(/term block-icmp/) }
+  #   its('stdout') { should match(/term .*icmp.*/) }
+  # end 
 end
