@@ -36,45 +36,63 @@ set security policies from-zone untrust to-zone trust policy default-deny then d
   tag cci: ['CCI-002661']
   tag nist: ['SI-4 (4) (b)']
 
+  # ------------------------------------------------------------------------
+  # Ensure that zones receiving inbound traffic (e.g., trust → untrust) are:
+  # - Monitored with security policies
+  # - Logging inbound session attempts
+  # - Using screens if appropriate
+  # - Only perform monitoring checks if the zone contains Layer 3 (routed) interfaces
+  # - Pass the test if only Layer 2 (switched) interfaces are present
+  # ------------------------------------------------------------------------
+
   # Per-zone inbound checks
-  monitored_zones = input('monitored_zones', value: ['trust', 'untrust'])
+  monitored_zones = input('monitored_zones', value: ['trust', 'untrust', 'dmz'])
 
   monitored_zones.each do |zone|
-    describe "STIG checks for zone: #{zone}" do
-      it 'should either pass STIG checks for L3 or confirm zone is L2-only' do
-        interfaces_cmd = inspec.command("show configuration security zones security-zone #{zone} | display set | match interfaces")
-        interfaces = interfaces_cmd.stdout.scan(/interfaces (\S+)/).flatten.uniq
+    # Step 1: Identify all interfaces assigned to the zone
+    interfaces_cmd = inspec.command("show configuration security zones security-zone #{zone} | display set | match interfaces")
+    interfaces = interfaces_cmd.stdout.scan(/interfaces (\S+)/).flatten.uniq
 
-        l3_interfaces = []
-        l2_interfaces = []
+    # Step 2: Determine if any are Layer 3 (routed) interfaces
+    l3_interfaces = interfaces.select do |intf|
+      intf_config = inspec.command("show configuration interfaces #{intf} | display set").stdout
+      intf_config.include?('family inet')
+    end
 
-        interfaces.each do |intf|
-          intf_config = inspec.command("show configuration interfaces #{intf} | display set").stdout
-
-          if intf_config.include?('family inet')
-            l3_interfaces << intf
-          elsif intf_config.include?('family ethernet-switching')
-            l2_interfaces << intf
-          end
+    if l3_interfaces.empty?
+      # Zone has no L3 interfaces — STIG check not applicable
+      describe "Zone '#{zone}' has no Layer 3 interfaces — STIG checks not applicable" do
+        it 'passes because no routed interfaces exist in the zone' do
+          expect(true).to eq(true)
         end
+      end
+    else
+      # Zone has L3 interfaces — apply full STIG checks
+      describe "Zone '#{zone}' has Layer 3 interfaces — applying STIG inbound checks" do
 
-        if l3_interfaces.any?
-          # Run STIG checks
+        # Check 1: Security policies exist for traffic coming from this zone
+        it 'has security policies for inbound traffic from this zone' do
           policy_check = inspec.command("show configuration security policies | display set | match 'from-zone #{zone}'")
           expect(policy_check.stdout).to match(/from-zone #{zone}/)
+        end
 
+        # Check 2: Session logging is configured for inbound policies
+        it 'logs inbound sessions using session-init' do
           log_check = inspec.command("show configuration security policies | display set | match 'from-zone #{zone}' | match 'then log session-init'")
           expect(log_check.stdout).to match(/then log session-init/)
+        end
 
+        # Check 3: A firewall screen is applied to the zone
+        it 'has a firewall screen applied to the zone' do
           screen_check = inspec.command("show configuration security zones | display set | match '#{zone} screen'")
           expect(screen_check.stdout).to match(/set security zones security-zone #{zone} screen/)
+        end
 
+        # Check 4: Host-inbound traffic is restricted and not wide open
+        it 'restricts host-inbound system services' do
           hit_check = inspec.command("show configuration security zones | display set | match '#{zone}'")
           expect(hit_check.stdout).not_to match(/system-services all/)
           expect(hit_check.stdout).to match(/host-inbound-traffic system-services/)
-        else
-          # No L3 interfaces — pass with explanation
-          expect(true).to eq(true), "Zone #{zone} has no Layer 3 interfaces; passing STIG check as not applicable"
         end
       end
     end

@@ -98,11 +98,11 @@ inputs:
     required: false
     sensitive: false
 
-  # SV-214537
+  # SV-214537, SV-214538
   - name: monitored_zones
     description: 'The security zones that should be monitored for inbound traffic'
     type: array
-    value: ['trust', 'untrust'] # Set default zones to monitor
+    value: ['trust', 'untrust', 'dmz'] # Set default zones to monitor
     required: true
     sensitive: false
 
