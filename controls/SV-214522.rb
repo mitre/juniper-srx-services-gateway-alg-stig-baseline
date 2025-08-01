@@ -41,13 +41,15 @@ set system syslog file<LOG-NAME> match "RT_FLOW_SESSION "'
     # --- Check for at least one local log file destination ---
     # This verifies that a log file is configured and a severity level is defined.
     it 'should define at least one file destination with severity' do
-      expect(output).to match(/set system syslog file \S+ any \S+/)
+      expect(output).to match(/set system syslog file \S+ any \S+/),
+        "At least one local log file should be configured with a severity level."
     end
 
     # --- Check for logging of interactive commands ---
     # Important for auditing administrator activity on the system.
     it 'should define logging for interactive commands' do
-      expect(output).to match(/set system syslog file interactive-commands interactive-commands any/)
+      expect(output).to match(/set system syslog file interactive-commands interactive-commands any/),
+        "Interactive commands should be logged to a file for auditing purposes."
     end
   end
 end

@@ -33,30 +33,13 @@ set security policies from-zone untrust to-zone trust policy default-deny then l
   tag cci: ['CCI-000172']
   tag nist: ['AU-12 c']
 
-  # Define the expected configuration or behavior
-  # describe command('show configuration security log') do
-  #   its('stdout') { should match (/(deny)/) }            # Matches the word "deny"
-  #   its('stdout') { should match (/(event-rate)/) }      # Matches the word "event-rate"
-  #   its('stdout') { should match (/(match condition)/) } # Matches the phrase "match condition"
-  # end
-
-  # describe command('show log messages | match "denied"') do
-  #   its('stdout') { should_not be_empty }    # Ensures there are logs for denied attempts
-  # end
-
-  # describe command('show configuration security zones') do
-  #   its('stdout') { should match (/(log)/) } # Matches the word "log"
-  # end
-
-#####################################################
-
   # STEP 1: Verify local syslog logging to a file is configured
   syslog_file_cmd = command('show configuration system syslog | display set | match "file"')
   syslog_file_output = syslog_file_cmd.stdout.strip
 
   describe 'Local syslog file configuration' do
     it 'should include at least one configured file log target' do
-      expect(syslog_file_output).to match(/^set system syslog file/)
+      expect(syslog_file_output).to match(/^set system syslog file/), "No local syslog file configured. At least one file log target should be defined to capture logs."
     end
   end
 
@@ -66,7 +49,7 @@ set security policies from-zone untrust to-zone trust policy default-deny then l
 
   describe 'Firewall log presence' do
     it 'should not be empty' do
-      expect(firewall_log_output).not_to be_empty
+      expect(firewall_log_output).not_to be_empty, "Firewall log is empty. Ensure that the firewall is configured to log events."
     end
   end
 

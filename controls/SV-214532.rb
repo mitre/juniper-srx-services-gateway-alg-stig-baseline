@@ -43,7 +43,7 @@ set security zones security-zone trust screen untrust-screen'
       let(:zone_config) { command("show configuration security zones security-zone #{zone} | display set | match screen").stdout }
 
       it "should have a DoS screen configured" do
-        expect(zone_config).to match(/screen/), "Zone #{zone} is missing a DoS screen"
+        expect(zone_config).to match(/screen/), "Zone '#{zone}' is missing a DoS screen"
       end
     end
   end
