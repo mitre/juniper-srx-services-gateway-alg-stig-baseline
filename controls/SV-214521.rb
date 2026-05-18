@@ -75,12 +75,12 @@ set security policies from-zone trust to-zone untrust policy default-permit then
   # Check if any remote syslog host is configured
   syslog_host_config = command('show configuration system syslog | display set | match "host "').stdout.strip
 
-  standalone = input('standalone_system')
+  standalone_system = input('standalone_system')
 
-  if standalone
+  if standalone_system
     impact 0.0
-    describe "standalone_statement" do
-      skip "#{standalone_statement}"
+    describe "test" do
+      skip "test"
     end
   else
     describe 'Remote syslog host configuration check' do
