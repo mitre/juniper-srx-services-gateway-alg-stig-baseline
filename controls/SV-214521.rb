@@ -76,11 +76,12 @@ set security policies from-zone trust to-zone untrust policy default-permit then
   syslog_host_config = command('show configuration system syslog | display set | match "host "').stdout.strip
 
   standalone_system = input('standalone_system')
+  standalone_statement = input('standalone_statement')
 
   if standalone_system
     impact 0.0
     describe "test" do
-      skip "test"
+      skip "#{standalone_statement}"
     end
   else
     describe 'Remote syslog host configuration check' do
