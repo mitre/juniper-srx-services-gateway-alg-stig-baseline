@@ -80,7 +80,7 @@ set security policies from-zone trust to-zone untrust policy default-permit then
 
   if standalone_system
     impact 0.0
-    describe "test" do
+    describe "#{standalone_statement}" do
       skip "#{standalone_statement}"
     end
   else
