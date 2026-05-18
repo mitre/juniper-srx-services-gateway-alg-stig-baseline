@@ -79,7 +79,7 @@ set security policies from-zone trust to-zone untrust policy default-permit then
 
   if standalone
     impact 0.0
-    describe '#{standalone_statement}' do
+    describe "standalone_statement" do
       skip "#{standalone_statement}"
     end
   else
