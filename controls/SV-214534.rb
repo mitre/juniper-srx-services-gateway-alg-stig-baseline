@@ -36,91 +36,101 @@ If the site has not configured the SRX to fail closed, this is a finding.'
   # 4. Explicit deny-all policy exists in configuration (optional)
   # -------------------------------------------------------------------------
 
-  #-------------------------------------------------------------------------------
-  # Test 1: Check that the default policy between trust and untrust zones is deny
-  #-------------------------------------------------------------------------------
-  describe command('show configuration security policies from-zone trust to-zone untrust | display set') do
-    let(:output) { subject.stdout }
+  standalone_system = input('standalone_system')
+  standalone_statement = input('standalone_statement')
 
-    it 'should include an explicit deny rule in trust-to-untrust policies' do
-      expect(output).to match(%r{set security policies from-zone trust to-zone untrust policy .* then deny}),
-        <<~FAILMSG
-          Expected an explicit 'then deny' rule for traffic from trust to untrust to enforce fail-closed behavior.
-        FAILMSG
+  if standalone_system
+    impact 0.0
+    describe "#{standalone_statement}" do
+      skip "#{standalone_statement}"
     end
-
-    it 'should define at least one policy for trust to untrust' do
-      expect(output).to match(/policy/),
-        <<~FAILMSG
-          No policies were found from trust to untrust. Without any policy, traffic is denied implicitly,
-          but it's best practice to explicitly define a deny-all catch-all rule.
-        FAILMSG
+  else
+    #-------------------------------------------------------------------------------
+    # Test 1: Check that the default policy between trust and untrust zones is deny
+    #-------------------------------------------------------------------------------
+    describe command('show configuration security policies from-zone trust to-zone untrust | display set') do
+      let(:output) { subject.stdout }
+  
+      it 'should include an explicit deny rule in trust-to-untrust policies' do
+        expect(output).to match(%r{set security policies from-zone trust to-zone untrust policy .* then deny}),
+          <<~FAILMSG
+            Expected an explicit 'then deny' rule for traffic from trust to untrust to enforce fail-closed behavior.
+          FAILMSG
+      end
+  
+      it 'should define at least one policy for trust to untrust' do
+        expect(output).to match(/policy/),
+          <<~FAILMSG
+            No policies were found from trust to untrust. Without any policy, traffic is denied implicitly,
+            but it's best practice to explicitly define a deny-all catch-all rule.
+          FAILMSG
+      end
     end
-  end
-
-  #-------------------------------------------------------------------------------
-  # Test 2: Ensure a global default policy is in place to deny traffic between
-  #         unspecified zones (applies when zone pairs aren't explicitly defined)
-  #-------------------------------------------------------------------------------
-  describe command('show configuration security policies global | display set') do
-    let(:output) { subject.stdout }
-
-    it 'should include a global deny-all catch-all policy' do
-      expect(output).to match(%r{set security policies global policy .* then deny}),
-        <<~FAILMSG
-          Expected to find a global 'then deny' rule to enforce default deny behavior when no specific zone-to-zone policy exists.
-          You need to define a global security policy on your Juniper SRX that explicitly denies all traffic as a catch-all (fail-closed) rule.
-          This ensures that if no specific policies are defined for a zone pair, the default behavior is to deny all traffic.
-          This is critical for maintaining a secure posture in the event of misconfigurations or unexpected traffic patterns.
-          Without this, the firewall may allow traffic that should be blocked, leading to potential security vulnerabilities.
-          Use the following command to set a global deny-all policy:
-            set security policies global policy deny-all match source-address any
-            set security policies global policy deny-all match destination-address any
-            set security policies global policy deny-all match application any
-            set security policies global policy deny-all then deny
-        FAILMSG
+  
+    #-------------------------------------------------------------------------------
+    # Test 2: Ensure a global default policy is in place to deny traffic between
+    #         unspecified zones (applies when zone pairs aren't explicitly defined)
+    #-------------------------------------------------------------------------------
+    describe command('show configuration security policies global | display set') do
+      let(:output) { subject.stdout }
+  
+      it 'should include a global deny-all catch-all policy' do
+        expect(output).to match(%r{set security policies global policy .* then deny}),
+          <<~FAILMSG
+            Expected to find a global 'then deny' rule to enforce default deny behavior when no specific zone-to-zone policy exists.
+            You need to define a global security policy on your Juniper SRX that explicitly denies all traffic as a catch-all (fail-closed) rule.
+            This ensures that if no specific policies are defined for a zone pair, the default behavior is to deny all traffic.
+            This is critical for maintaining a secure posture in the event of misconfigurations or unexpected traffic patterns.
+            Without this, the firewall may allow traffic that should be blocked, leading to potential security vulnerabilities.
+            Use the following command to set a global deny-all policy:
+              set security policies global policy deny-all match source-address any
+              set security policies global policy deny-all match destination-address any
+              set security policies global policy deny-all match application any
+              set security policies global policy deny-all then deny
+          FAILMSG
+      end
     end
-  end
-
-  #-------------------------------------------------------------------------------
-  # Test 3: Ensure no interface or zone allows all inbound traffic by default
-  #-------------------------------------------------------------------------------
-  describe command('show configuration security zones | display set') do
-    let(:output) { subject.stdout }
-
-    it 'should not allow all system services inbound on any interface' do
-      expect(output).not_to match(/host-inbound-traffic.*system-services all/),
-        <<~FAILMSG
-          Found an interface or zone allowing all system services inbound (system-services all).
-          This could allow unauthorized access if not strictly managed.
-          For all interfaces that allow inbound traffic, replace system-services all with specify system services.
-          For example:
-            set security zones security-zone <zone-name> host-inbound-traffic system-services ssh
-            set security zones security-zone <zone-name> host-inbound-traffic system-services ssh telnet
-        FAILMSG
+  
+    #-------------------------------------------------------------------------------
+    # Test 3: Ensure no interface or zone allows all inbound traffic by default
+    #-------------------------------------------------------------------------------
+    describe command('show configuration security zones | display set') do
+      let(:output) { subject.stdout }
+  
+      it 'should not allow all system services inbound on any interface' do
+        expect(output).not_to match(/host-inbound-traffic.*system-services all/),
+          <<~FAILMSG
+            Found an interface or zone allowing all system services inbound (system-services all).
+            This could allow unauthorized access if not strictly managed.
+            For all interfaces that allow inbound traffic, replace system-services all with specify system services.
+            For example:
+              set security zones security-zone <zone-name> host-inbound-traffic system-services ssh
+              set security zones security-zone <zone-name> host-inbound-traffic system-services ssh telnet
+          FAILMSG
+      end
     end
-  end
-
-  #-------------------------------------------------------------------------------
-  # Test 4: Look for an explicitly named catch-all deny-all rule
-  #         (optional convention check)
-  #-------------------------------------------------------------------------------
-  describe command('show configuration security policies | display set') do
-    let(:output) { subject.stdout }
-
-    it 'should include a policy named deny-all or equivalent' do
-      expect(output).to match(/set security policies .* policy deny-all .* then deny/),
-        <<~FAILMSG
-          Could not find a policy named 'deny-all' or an equivalent policy that denies all traffic.
-          Having a clearly named deny-all rule helps make fail-closed behavior obvious to reviewers.
-          If you do not have a deny-all policy, consider adding one to ensure that all traffic is denied by default.
-          Use the following command to create a deny-all policy:
-            set security policies from-zone <zone-name> to-zone <zone-name> policy deny-all match source-address any
-            set security policies from-zone <zone-name> to-zone <zone-name> policy deny-all match destination-address any
-            set security policies from-zone <zone-name> to-zone <zone-name> policy deny-all match application any
-            set security policies from-zone <zone-name> to-zone <zone-name> policy deny-all then deny
-          This will ensure that any traffic not explicitly allowed by other policies is denied, maintaining a fail-closed posture.
-        FAILMSG
+  
+    #-------------------------------------------------------------------------------
+    # Test 4: Look for an explicitly named catch-all deny-all rule
+    #         (optional convention check)
+    #-------------------------------------------------------------------------------
+    describe command('show configuration security policies | display set') do
+      let(:output) { subject.stdout }
+  
+      it 'should include a policy named deny-all or equivalent' do
+        expect(output).to match(/set security policies .* policy deny-all .* then deny/),
+          <<~FAILMSG
+            Could not find a policy named 'deny-all' or an equivalent policy that denies all traffic.
+            Having a clearly named deny-all rule helps make fail-closed behavior obvious to reviewers.
+            If you do not have a deny-all policy, consider adding one to ensure that all traffic is denied by default.
+            Use the following command to create a deny-all policy:
+              set security policies from-zone <zone-name> to-zone <zone-name> policy deny-all match source-address any
+              set security policies from-zone <zone-name> to-zone <zone-name> policy deny-all match destination-address any
+              set security policies from-zone <zone-name> to-zone <zone-name> policy deny-all match application any
+              set security policies from-zone <zone-name> to-zone <zone-name> policy deny-all then deny
+            This will ensure that any traffic not explicitly allowed by other policies is denied, maintaining a fail-closed posture.
+          FAILMSG
+      end
     end
   end
 end
