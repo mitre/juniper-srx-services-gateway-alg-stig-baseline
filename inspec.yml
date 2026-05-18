@@ -30,6 +30,21 @@ inspec_version: ">= 4.0"
 ###
 
 inputs:
+  # SV-214521, 34, 35
+  - name: standalone_system
+    description: 'boolean confirming if the Juniper is either airgapped, on a private/local network, or never attached to an enterprise network, etc.'
+    type: boolean
+    value: false
+    require: true
+
+  # SV-214521, 34, 35
+  - name: standalone_statement
+    description: 'statement explaining how the Juniper is either airgapped, on a private/local network, or never attached to an enterprise network, etc.'
+    type: string
+    value: ''
+    required: true
+    sensitive: false
+
   # SV-214518
   - name: from_zone
     description: 'The system group of the source zone'
