@@ -46,8 +46,8 @@ set firewall family inet6 filter egress-v6 term permit-lr then accept'
   tag nist: ['SI-11 a']
 
   # Block or restrict ICMP from untrust to trust (no inbound pings from internet)
-  describe command('show configuration security policies | display set | match "application junos-ping"') do
-    its('stdout') { should_not match(/from-zone untrust to-zone trust/) }
+  describe command('show configuration security policies | display set | match "set security policies from-zone untrust to-zone trust"') do
+    its('stdout') { should match(/block-icmp/) }
   end
 
   # Check that ICMP is not globally allowed in host-inbound system services
