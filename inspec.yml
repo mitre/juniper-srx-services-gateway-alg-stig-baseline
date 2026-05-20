@@ -69,7 +69,22 @@ inputs:
     required: false
     sensitive: false
 
-  # SV-214527
+   # SV-214523
+  - name: least_functionality_manual_review_performed
+    description: 'boolean confirming if a manual review confirms disabling or removing unnecessary network services and functions that are not used as part of its role in the architecture.'
+    type: boolean
+    value: false
+    require: true
+
+  # SV-214523
+  - name: least_functionality_manual_review_statement
+    description: 'statement of manual review confirming disabling or removing unnecessary network services and functions that are not used as part of its role in the architecture.'
+    type: string
+    value: ''
+    required: true
+    sensitive: false
+
+ # SV-214527
   - name: approved_services
     description: 'Define approved protocols per PPSM CAL or organizational policy'
     type: array
