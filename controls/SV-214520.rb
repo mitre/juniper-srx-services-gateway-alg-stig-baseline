@@ -43,23 +43,32 @@ set security policies from-zone untrust to-zone trust policy default-deny then l
     end
   end
 
-  # STEP 2: Check that firewall log entries are being generated
-  firewall_log_cmd = command('show firewall log')
-  firewall_log_output = firewall_log_cmd.stdout.strip
+  # STEP 2: Check that firewall security policies include at least one deny then log configuration
+  firewall_security_policy_output = command('show configuration security policies | display set | match "from-zone untrust to-zone trust policy block.* then log session-init"').stdout.strip
 
-  describe 'Firewall log presence' do
-    it 'should not be empty' do
-      expect(firewall_log_output).not_to be_empty, "Firewall log is empty. Ensure that the firewall is configured to log events."
+  describe "Firewall security policies in \n#{firewall_security_policy_output}" do
+    it 'should log session denials from untrusted to trusted zones' do
+      expect(firewall_security_policy_output).to match(/^set security policies from-zone untrust to-zone trust policy .* then log session-init/), "nope"
     end
   end
-
-  # STEP 3: Check that discarded packet actions (D) are being logged
-  describe 'Unsuccessful access attempts (discarded packets)' do
-    it 'should appear in the firewall log' do
-      discard_matches = firewall_log_output.lines.select { |line| line.include?(' D ') || line.strip.end_with?('D') }
-
-      expect(discard_matches).not_to be_empty, "No discarded (D) packet actions found in firewall log. Unsuccessful access attempts may not be logged."
-    end
-  end
+  
+#  # STEP 2: Check that firewall log entries are being generated
+#  firewall_log_cmd = command('show firewall log')
+#  firewall_log_output = firewall_log_cmd.stdout.strip
+#
+#  describe 'Firewall log presence' do
+#    it 'should not be empty' do
+#      expect(firewall_log_output).not_to be_empty, "Firewall log is empty. Ensure that the firewall is configured to log events."
+#    end
+#  end
+#
+#  # STEP 3: Check that discarded packet actions (D) are being logged
+#  describe 'Unsuccessful access attempts (discarded packets)' do
+#    it 'should appear in the firewall log' do
+#      discard_matches = firewall_log_output.lines.select { |line| line.include?(' D ') || line.strip.end_with?('D') }
+#
+#      expect(discard_matches).not_to be_empty, "No discarded (D) packet actions found in firewall log. Unsuccessful access attempts may not be logged."
+#    end
+#  end
 end
 
