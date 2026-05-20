@@ -30,7 +30,16 @@ Note: Only remove unauthorized services. This control is not intended to restric
   tag cci: ['CCI-000381']
   tag nist: ['CM-7 a']
 
-  describe 'Check the Juniper SRX Services Gateway Firewall for unnecessary network services and functions installed/running that are not used in the architecture.' do
-    skip 'If unneeded services and functions are installed on the device, but are not part of the documented role of the device, this is a finding.'
+  least_functionality_manual_review_performed = input('least_functionality_manual_review_performed')
+  least_functionality_manual_review_statement = input('least_functionality_manual_review_statement')
+
+  if least_functionality_manual_review_performed
+    describe "The manual review statement should not be empty: \n#{least_functionality_manual_review_statement}" do
+      expect(least_functionality_manual_review_statement).not_to be_empty, "Manual review statement is empty. Please provide a manual review."
+    end
+  else
+    describe 'Check the Juniper SRX Services Gateway Firewall for unnecessary network services and functions installed/running that are not used in the architecture.' do
+      skip 'If unneeded services and functions are installed on the device, but are not part of the documented role of the device, this is a finding.'
+    end
   end
 end
